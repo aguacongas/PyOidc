@@ -12,3 +12,9 @@ class Settings(BaseSettings):
     base_url: str = ""
     host: str = "127.0.0.1"
     port: int = 8000
+
+    # JWKS (RFC 7517)
+    jwks_key_size: int = 4096
+    jwks_algorithm: str = "RS256"
+    jwks_rotation_days: int = 90
+    jwks_grace_period_days: int = 7

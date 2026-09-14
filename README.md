@@ -42,17 +42,17 @@ les politiques de sécurité** — le glue entre la spec et la lib crypto.
 
 ## Endpoints prévus
 
-| Endpoint                              | Rôle                                   |
-| ------------------------------------- | -------------------------------------- |
-| `/.well-known/openid-configuration`   | Discovery                              |
-| `/.well-known/jwks.json`              | Clés publiques de signature             |
-| `/authorize`                          | Code / Implicit / Hybrid                |
-| `/token`                              | Échange code, refresh, client_credentials |
-| `/userinfo`                           | Claims de l'utilisateur                 |
-| `/introspect`                         | Introspection de token (RFC 7662)       |
-| `/revoke`                             | Révocation de token (RFC 7009)          |
-| `/registration`                       | Client registration dynamique (option)  |
-| `/end_session`                        | RP-Initiated Logout                     |
+| Endpoint                              | Rôle                                   | État |
+| ------------------------------------- | -------------------------------------- | ---- |
+| `/.well-known/openid-configuration`   | Discovery                              | ✅ |
+| `/.well-known/jwks.json`              | Clés publiques de signature            | ✅ |
+| `/authorize`                          | Code / Implicit / Hybrid               | ⬜ |
+| `/token`                              | Échange code, refresh, client_credentials | ⬜ |
+| `/userinfo`                           | Claims de l'utilisateur                | ⬜ |
+| `/introspect`                         | Introspection de token (RFC 7662)      | ⬜ |
+| `/revoke`                             | Révocation de token (RFC 7009)         | ⬜ |
+| `/registration`                       | Client registration dynamique (option) | ⬜ |
+| `/end_session`                        | RP-Initiated Logout                    | ⬜ |
 
 ## Documentation
 
@@ -80,7 +80,7 @@ tests/             pytest unit + intégration (TestClient httpx)
 ## Plan d'implémentation
 
 1. **Bootstrap** — FastAPI + models Pydantic + endpoints `/token` et `/authorize` squelettes
-2. **JWKS + Discovery** — génération des clés, `/.well-known/*`
+2. ✅ **JWKS + Discovery** — génération des clés RSA (rotation), `/.well-known/*`
 3. **Authorization Code + PKCE** (grant principal, RFC 6749 + 7636)
 4. **ID Token + UserInfo** — émission et validation JWT via PyJWT
 5. **Refresh tokens** — rotation, expiration, rejeu

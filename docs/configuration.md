@@ -12,6 +12,10 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 | `PYOIDC_BASE_URL` | *(issuer)* | Base utilisée pour construire les URL des endpoints publiées dans le document de discovery (`/authorize`, `/token`, `/userinfo`, `/.well-known/jwks.json`, …). Par défaut : l'issuer. |
 | `PYOIDC_HOST` | `127.0.0.1` | Interface réseau sur laquelle écoute le serveur Uvicorn. |
 | `PYOIDC_PORT` | `8000` | Port d'écoute. |
+| `PYOIDC_JWKS_KEY_SIZE` | `4096` | Taille des clés RSA générées (bits) pour la signature des jetons. |
+| `PYOIDC_JWKS_ALGORITHM` | `RS256` | Algorithme de signature annoncé dans le JWKS et les ID tokens. |
+| `PYOIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
+| `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé en mémoire. |
 
 ### `issuer` vs `base_url`
 
@@ -20,6 +24,19 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 - **`base_url`** est uniquement la racine de construction des URL des endpoints exposées
   dans `/.well-known/openid-configuration`. Vous n'en avez généralement pas besoin ;
   par défaut les deux sont identiques.
+
+### Signature et rotation des clés (JWKS)
+
+- Au démarrage, une clé RSA est générée et exposée sur `/.well-known/jwks.json`
+  (format JWK, champs `kty`, `kid`, `use`, `alg`, `n`, `e`).
+- À chaque lecture du JWKS, le serveur applique la rotation :
+  1. les clés plus vieilles que `rotation_days` sont retirées du JWKS ;
+  2. les clés plus vieilles que `rotation_days + grace_period_days` sont supprimées
+     en mémoire ;
+  3. si aucune clé active ne reste, une nouvelle clé est générée.
+- En cas de rotation, garder les clients qui mettent en cache le JWKS à jour est de
+  la responsabilité du client : prévoir un intervalle de rafraîchissement inférieur à
+  `rotation_days`.
 
 ## Exemples
 
@@ -48,7 +65,6 @@ PYOIDC_PORT=8000
 Au fur et à mesure de l'implémentation des features, de nouveaux réglages apparaîtront
 ici :
 
-- **JWKS** — algorithme de signature (`RS256`, `ES256`…), rotation des clés
 - **Tokens** — durée de vie des access tokens / refresh tokens (rotation)
 - **Clients** — enregistrement des clients OIDC et leurs autorisations
 - **Persistance** — chaîne de connexion du stockage externe (SQL, Mongo…) et
