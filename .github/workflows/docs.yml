@@ -17,17 +17,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Vérifier que le code et la documentation avancent ensemble
+      - name: Vérifier que les features livrent aussi leurs docs
         shell: bash
         run: |
+          author="${{ github.event.pull_request.user.login }}"
+          title="${{ github.event.pull_request.title }}"
+          branch="${{ github.event.pull_request.head.ref }}"
+
+          # Exempts automatiques : Dependabot et maintenances non-feature.
+          if [ "$author" = "dependabot[bot]" ]; then exit 0; fi
+          case "$title" in
+            chore|chore:*|fix|fix:*|docs|docs:*|refactor|refactor:*|test|test:*|build|build:*|ci|ci:*|revert|revert:*) exit 0 ;;
+          esac
+          case "$branch" in
+            chore/*|fix/*|docs/*|refactor/*|test/*|build/*|ci/*|revert/*) exit 0 ;;
+          esac
+
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
           changed="$(git diff --name-only "$base" "$head")"
-          code_changed="$(printf '%s\n' "$changed" | grep -E '^(src/|pyproject\.toml)' || true)"
+          code_changed="$(printf '%s\n' "$changed" | grep -E '^src/' || true)"
           docs_changed="$(printf '%s\n' "$changed" | grep -E '^(README\.md|docs/)' || true)"
           if [ -n "$code_changed" ] && [ -z "$docs_changed" ]; then
-            echo "::error::Le code change sans mise à jour de la documentation."
+            echo "::error::Une feature change du code sans mise à jour de la documentation."
             printf '%s\n' "$code_changed"
-            echo "La Definition of Done exige une mise à jour de README.md ou docs/."
+            echo "La Definition of Done exige une mise à jour de README.md ou docs/ dans la meme PR."
             exit 1
           fi
