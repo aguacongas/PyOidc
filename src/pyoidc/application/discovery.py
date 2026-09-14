@@ -15,9 +15,11 @@ class DiscoveryUseCase:
     """Produit les métadonnées de discovery depuis la configuration de l'émetteur."""
 
     def __init__(self, config: DiscoveryConfig) -> None:
+        """Injection de la configuration de l'émetteur."""
         self._config = config
 
     def execute(self) -> dict[str, object]:
+        """Construit les métadonnées OIDC Discovery (§3 OIDC Discovery 1.0)."""
         base = self._resolve_base_url()
         return {
             "issuer": self._config.issuer,

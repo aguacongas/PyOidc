@@ -10,6 +10,7 @@ _PACKAGE_VERSION = "0.1.0"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    """Assemble l'application FastAPI ; câble les usecases avec les réglages fournis."""
     settings = settings if settings is not None else Settings()
     config = DiscoveryConfig(issuer=settings.issuer, base_url=settings.base_url)
 
