@@ -29,6 +29,7 @@ def _run_steps(steps: Sequence[str]) -> int:
 
 
 def main() -> int:
+    """Enchaîne les étapes demandées (ou toutes par défaut) et retourne le code de sortie."""
     args = sys.argv[1:]
     steps = tuple(args) if args else tuple(_STEPS)
     unknown = tuple(step for step in steps if step not in _STEPS)

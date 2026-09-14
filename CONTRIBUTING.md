@@ -32,6 +32,9 @@ pytest                       # tests + couverture (min 80 %)
   - `dataclasses` pour les structs, `Pydantic` pour les modèles d'entrée/sortie
 - **Nommage PEP 8** : `snake_case` fonctions/variables, `UPPER_CASE` constantes,
   `PascalCase` classes, `_privé` pour membres internes.
+- **Docstrings obligatoires** (convention *google*, règle `D` de ruff) : tout module,
+  classe et fonction/méthode publique doit avoir un docstring; le contenu doit décrire
+  le *quoi* (le pourquoi va en commentaire), en français.
 - **Formatage** (automatisé par `ruff format`) : double quotes, 4 espaces,
   100 caractères max, imports triés (`isort`).
 

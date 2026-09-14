@@ -7,6 +7,7 @@ from pyoidc.interfaces.schemas.discovery import DiscoveryDocument
 
 
 def discovery_router(usecase: DiscoveryUseCase) -> APIRouter:
+    """Construit le routeur FastAPI exposant les métadonnées de discovery."""
     router = APIRouter(tags=["discovery"])
 
     @router.get("/.well-known/openid-configuration", summary="OpenID Connect Discovery")
