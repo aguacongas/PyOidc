@@ -1,0 +1,105 @@
+# PyOidc — Serveur OpenID Connect
+
+Serveur **OpenID Connect** (OIDC) / identity Provider, dans l'esprit de
+[TheIdServer](https://github.com/aguacongas/TheIdServer) mais implémenté en Python
+et conçu autour de la **specification** OIDC / OAuth 2.0.
+
+L'objectif n'est pas de réinventer la roue :
+
+- **HTTP + TLS** : on utilise **FastAPI** (sous **Uvicorn**), et TLS est géré par
+  l'infrastructure (proxy / ingress / terminateur TLS) — pas de ré-implémentation.
+- **JWT** : on utilise **PyJWT**, la bibliothèque JWT la plus largement utilisée
+  dans l'industrie (sérialisation, signature, vérification des claims).
+- **Cryptographie bas niveau** : `cryptography` (bindings OpenSSL) pour les clés,
+  le RSA/EC, le chiffrement.
+
+L'implémentation maison se concentre donc sur ce qui fait la valeur d'un serveur
+OIDC : **les flows, les endpoints, la gestion des clients/consentements/sessions,
+les politiques de sécurité** — le glue entre la spec et la lib crypto.
+
+## Stack
+
+- **Python 3.10+** (référencé : 3.14)
+- **FastAPI + Uvicorn** — serveur HTTP / API
+- **PyJWT** — JWT (RFC 7519) / JWS (RFC 7515) / JWA (RFC 7518) / JWK (RFC 7517)
+- **cryptography** — primitives de bas niveau
+- **Pydantic** — modèles et validation des requêtes/réponses OIDC
+- **pytest** (+ `httpx`/TestClient de FastAPI pour les tests d'intégration)
+
+## Spécifications couvertes
+
+- [OAuth 2.0 Core] (RFC 6749)
+- [OAuth 2.0 Bearer Tokens] (RFC 6750)
+- [OpenID Connect Core 1.0] — code, implicit, hybrid, UserInfo, logout
+- [OpenID Connect Discovery] (RFC 8414) — `/.well-known/openid-configuration`
+- [JWK Set] — `/.well-known/jwks.json`
+- [PKCE] (RFC 7636) — authorization code + PKCE
+- [OAuth 2.0 Token Revocation] (RFC 7009)
+- [OAuth 2.0 Token Introspection] (RFC 7662)
+- [OAuth 2.0 JWT Access Tokens] (RFC 9068) — extension
+- [Pushed Authorization Requests] (RFC 9126) — extension
+- [OpenID Connect RP-Initiated Logout] (OIDC spec) — `/end_session`
+
+## Endpoints prévus
+
+| Endpoint                              | Rôle                                   |
+| ------------------------------------- | -------------------------------------- |
+| `/.well-known/openid-configuration`   | Discovery                              |
+| `/.well-known/jwks.json`              | Clés publiques de signature             |
+| `/authorize`                          | Code / Implicit / Hybrid                |
+| `/token`                              | Échange code, refresh, client_credentials |
+| `/userinfo`                           | Claims de l'utilisateur                 |
+| `/introspect`                         | Introspection de token (RFC 7662)       |
+| `/revoke`                             | Révocation de token (RFC 7009)          |
+| `/registration`                       | Client registration dynamique (option)  |
+| `/end_session`                        | RP-Initiated Logout                     |
+
+## Structure (Clean Architecture)
+
+Le code suit **Clean Architecture** : chaque cercle ne dépend que de son cercle intérieur
+(`domain` ← `application` ← `interfaces` ← `infrastructure`).
+
+```
+src/pyoidc/
+  domain/          entités OIDC (Client, Grant, Scope, Claims) — zéro dépendance
+  application/     cas d'utilisation : émission code/token, validation, consentement
+  interfaces/
+    api/           routes FastAPI (authorize, token, userinfo, jwks, discovery...)
+    schemas/       modèles Pydantic request/response OIDC
+    repositories/  abstractions de persistance (ports)
+  infrastructure/  PyJWT, storage concret (in-memory d'abord, puis SQL/Mongo)
+  server.py        composition root — montage FastAPI + injection de dépendances
+tests/             pytest unit + intégration (TestClient httpx)
+```
+
+## Plan d'implémentation
+
+1. **Bootstrap** — FastAPI + models Pydantic + endpoints `/token` et `/authorize` squelettes
+2. **JWKS + Discovery** — génération des clés, `/.well-known/*`
+3. **Authorization Code + PKCE** (grant principal, RFC 6749 + 7636)
+4. **ID Token + UserInfo** — émission et validation JWT via PyJWT
+5. **Refresh tokens** — rotation, expiration, rejeu
+6. **Implicit & Hybrid** (OIDC Core 1.0)
+7. **Logout** — RP-Initiated Logout
+8. **Introspection / Revocation** (RFC 7662 / 7009)
+9. **Client Registration** — registration dynamique
+10. **Persistence** — stockage pluggable (SQL, Mongo, etc.)
+
+## Notes
+
+- Pas de ré-implémentation de JWT/TLS/HTTP : PyJWT, FastAPI et l'infra de transport
+  font le travail — on implémente **la spec**, pas la crypto.
+- Chaque feature = un endpoint + ses tests.
+
+[TheIdServer]: https://github.com/aguacongas/TheIdServer
+[OAuth 2.0 Core]: https://datatracker.ietf.org/doc/html/rfc6749
+[OAuth 2.0 Bearer Tokens]: https://datatracker.ietf.org/doc/html/rfc6750
+[OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html
+[OpenID Connect Discovery]: https://openid.net/specs/openid-connect-discovery-1_0.html
+[JWK Set]: https://www.rfc-editor.org/rfc/rfc7517
+[PKCE]: https://www.rfc-editor.org/rfc/rfc7636
+[OAuth 2.0 Token Revocation]: https://datatracker.ietf.org/doc/html/rfc7009
+[OAuth 2.0 Token Introspection]: https://datatracker.ietf.org/doc/html/rfc7662
+[OAuth 2.0 JWT Access Tokens]: https://datatracker.ietf.org/doc/html/rfc9068
+[Pushed Authorization Requests]: https://datatracker.ietf.org/doc/html/rfc9126
+[OpenID Connect RP-Initiated Logout]: https://openid.net/specs/openid-connect-rpinitiated-1_0.html
