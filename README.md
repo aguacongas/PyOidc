@@ -54,6 +54,11 @@ les politiques de sécurité** — le glue entre la spec et la lib crypto.
 | `/registration`                       | Client registration dynamique (option)  |
 | `/end_session`                        | RP-Initiated Logout                     |
 
+## Documentation
+
+- [Installation](docs/installation.md) — prérequis, installation, lancement, déploiement
+- [Configuration du serveur](docs/configuration.md) — variables `PYOIDC_*`, `.env`, démarrage
+
 ## Structure (Clean Architecture)
 
 Le code suit **Clean Architecture** : chaque cercle ne dépend que de son cercle intérieur
