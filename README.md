@@ -85,6 +85,40 @@ tests/             pytest unit + intégration (TestClient httpx)
 9. **Client Registration** — registration dynamique
 10. **Persistence** — stockage pluggable (SQL, Mongo, etc.)
 
+## Développement local
+
+```sh
+uv sync                    # installe les dépendances (prod + dev)
+uv run python -m pyoidc    # lance le serveur sur http://127.0.0.1:8000
+
+uv run python scripts/check.py   # vérification locale complète : ruff + mypy + pytest
+uv run python scripts/check.py lint format type test  # ou une sous-sélection
+```
+
+Config via variables d'environnement `PYOIDC_*` (`PYOIDC_ISSUER`, `PYOIDC_HOST`,
+`PYOIDC_PORT`, ...).
+
+## Qualité et SonarCloud
+
+Le projet passe par **SonarCloud** (org `aguacongas`, projet `aguacongas_PyOidc`).
+Les règles de codage sont alignées sur celles de Sonar en local :
+
+- **Complexité cyclomatique** ≤ 10 par fonction (équivalent S3776) — via ruff `C90`
+- **Nommage**, imports inutilisés, sécurité (bandit), prints — via la config ruff
+- **Typage strict** (mypy `strict`) et **couverture** pytest ≥ 80% (branch) exigés en local
+
+CI GitHub (`.github/workflows/ci.yml`) : ruff lint/format, mypy strict, pytest+couv,
+puis analyse SonarCloud sur `push`/`pull_request`.
+
+À faire une fois par dépôt :
+
+```sh
+# 1. Token d'analyse SonarCloud (User > Security > Generate Token), puis :
+gh secret set SONAR_SECRET
+# 2. Créer le projet "PyOidc" dans l'org aguacongas sur sonarcloud.io
+#    (clé : aguacongas_PyOidc) et activer la "Pull request decoration" GitHub.
+```
+
 ## Notes
 
 - Pas de ré-implémentation de JWT/TLS/HTTP : PyJWT, FastAPI et l'infra de transport

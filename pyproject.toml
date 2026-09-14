@@ -39,6 +39,7 @@ packages = ["src/pyoidc"]
 target-version = "py310"
 line-length = 100
 src = ["src"]
+fix = true
 
 [tool.ruff.lint]
 preview = true
@@ -52,6 +53,7 @@ select = [
     "B",       # flake8-bugbear (pièges connus)
     "A",       # flake8-builtins (masquage de builtins)
     "C4",      # flake8-comprehensions
+    "C90",     # mccabe — complexité cyclomatique (aligné sur SonarCloud S3776, seuil 10)
     "S",       # bandit (sécurité)
     "SIM",     # flake8-simplify (code simplifiable)
     "T",       # flake8-print (interdit print en prod)
@@ -59,16 +61,17 @@ select = [
     "PERF",    # pyperf (petites perf non ambiguës)
     "RUF",     # règles spécifiques ruff
 ]
-fix = true
-fix-safety = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # assert autorisé dans les tests
+"tests/**" = ["assert"]  # assert autorisé dans les tests
+"scripts/**" = ["print", "suspicious-subprocess-import", "subprocess-without-shell-equals-true"]  # script de dev : print + subprocess ok
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-indent-width = 4
 line-ending = "auto"
 
 # ---------------------------------------------------------------------------
@@ -80,8 +83,8 @@ python_version = "3.10"
 plugins = ["pydantic.mypy"]
 pretty = true
 
-[tool.mypy.overrides]
-module = ["tests.*"]
+[[tool.mypy.overrides]]
+module = "tests.*"
 disallow_untyped_defs = false
 
 # ---------------------------------------------------------------------------
@@ -94,10 +97,8 @@ testpaths = ["tests"]
 [tool.coverage.run]
 source = ["src/pyoidc"]
 branch = true
+omit = ["src/pyoidc/__main__.py"]
 
 [tool.coverage.report]
 show_missing = true
 fail_under = 80
-
-[tool.coverage.exclude]
-omit = ["src/pyoidc/__main__.py"]

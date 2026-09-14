@@ -1,0 +1,34 @@
+"""Cas d'utilisation du serveur OpenID Connect."""
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryConfig:
+    """Configuration de base de l'émission du document de discovery."""
+
+    issuer: str
+    base_url: str = ""
+
+
+class DiscoveryUseCase:
+    """Produit les métadonnées de discovery depuis la configuration de l'émetteur."""
+
+    def __init__(self, config: DiscoveryConfig) -> None:
+        self._config = config
+
+    def execute(self) -> dict[str, object]:
+        base = self._resolve_base_url()
+        return {
+            "issuer": self._config.issuer,
+            "authorization_endpoint": f"{base}/authorize",
+            "token_endpoint": f"{base}/token",
+            "userinfo_endpoint": f"{base}/userinfo",
+            "jwks_uri": f"{base}/.well-known/jwks.json",
+            "introspection_endpoint": f"{base}/introspect",
+            "revocation_endpoint": f"{base}/revoke",
+            "end_session_endpoint": f"{base}/end_session",
+        }
+
+    def _resolve_base_url(self) -> str:
+        return (self._config.base_url or self._config.issuer).rstrip("/")
