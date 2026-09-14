@@ -1,0 +1,33 @@
+name: Documentation sync
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-sync:
+    name: Docs à jour avec le code
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Vérifier que le code et la documentation avancent ensemble
+        shell: bash
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          changed="$(git diff --name-only "$base" "$head")"
+          code_changed="$(printf '%s\n' "$changed" | grep -E '^(src/|pyproject\.toml)' || true)"
+          docs_changed="$(printf '%s\n' "$changed" | grep -E '^(README\.md|docs/)' || true)"
+          if [ -n "$code_changed" ] && [ -z "$docs_changed" ]; then
+            echo "::error::Le code change sans mise à jour de la documentation."
+            printf '%s\n' "$code_changed"
+            echo "La Definition of Done exige une mise à jour de README.md ou docs/."
+            exit 1
+          fi

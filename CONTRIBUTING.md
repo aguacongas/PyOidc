@@ -54,6 +54,24 @@ pytest                       # tests + couverture (min 80 %)
 2. `ruff check . && ruff format . && mypy src && pytest` doivent passer **en local**.
 3. Ouvrir une PR vers `main` — les mêmes checks tournent en CI.
 
+## Definition of Done
+
+Chaque feature n'est **done** que si elle respecte l'ensemble :
+
+- [ ] **Qualité** — `scripts/check.py` vert (ruff lint+format, mypy strict, pytest ≥ 80 %)
+- [ ] **Tests** — les endpoints/usecases ajoutés couvrent le nouveau code (100 % sur la
+      feature de préférence)
+- [ ] **SonarCloud** — aucune nouvelle issue sur le diff de la PR
+- [ ] **Documentation à jour dans la même PR** :
+  - [ ] `README.md` — table des endpoints, plan d'implémentation, mention de la feature
+  - [ ] `docs/configuration.md` — nouveaux paramètres `PYOIDC_*` (par feature)
+  - [ ] `docs/installation.md` — si le déploiement/lancement change
+  - [ ] Disposer/vérifier les liens `#spec` de la feature
+
+> Règle pragmatique : un PR qui modifie `src/` ou `pyproject.toml` implique au minimum une
+> mise à jour du README (endpoints/plan) ou d'un doc `docs/` — la documentation n'est pas
+> un « à part », elle est livrée avec la feature.
+
 ## Architecture
 
 Le code respecte **Clean Architecture** en 4 cercles concentriques, avec la règle de
