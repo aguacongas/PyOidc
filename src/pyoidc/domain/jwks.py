@@ -78,21 +78,21 @@ class KeyManager(Protocol):
     L'infrastructure fournit l'implémentation concrète (cryptography).
     """
 
-    def generate_key_pair(self, key_size: int, algorithm: JWTAlgorithm) -> KeyPair:
+    async def generate_key_pair(self, key_size: int, algorithm: JWTAlgorithm) -> KeyPair:
         """Génère une nouvelle paire de clés et l'ajoute au magasin."""
         ...
 
-    def get_active_keys(self) -> list[KeyPair]:
+    async def get_active_keys(self) -> list[KeyPair]:
         """Retourne les clés encore actives (non expirées)."""
         ...
 
-    def mark_expired_keys(self, rotation_days: int, grace_period_days: int) -> int:
+    async def mark_expired_keys(self, rotation_days: int, grace_period_days: int) -> int:
         """Passe les clés périmées en inactives, supprime celles hors grace period.
 
         Retourne le nombre de clés supprimées.
         """
         ...
 
-    def ensure_active_key(self, key_size: int, algorithm: JWTAlgorithm) -> None:
+    async def ensure_active_key(self, key_size: int, algorithm: JWTAlgorithm) -> None:
         """S'assure qu'au moins une clé active de l'algorithme existe."""
         ...

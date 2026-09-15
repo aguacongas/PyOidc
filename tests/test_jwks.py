@@ -1,8 +1,11 @@
 """Tests de la feature JWKS (RFC 7517) — clés multi-algorithmes."""
 
+import asyncio
 import base64
+from collections.abc import Awaitable
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from typing import TypeVar
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,16 +13,28 @@ from fastapi.testclient import TestClient
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
 from pyoidc.infrastructure.jwks import RSAKeyManager
+from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
 from pyoidc.infrastructure.settings import Settings
 from pyoidc.server import create_app
 
 _ISSUER = "https://id.example"
 _KEY_SIZE = 2048
 
+_T = TypeVar("_T")
+
+
+def run(awaitable: Awaitable[_T]) -> _T:
+    """Exécute une coroutine de manière synchrone (tests sans event loop externe)."""
+    return asyncio.run(awaitable)
+
+
+def _manager() -> RSAKeyManager:
+    return RSAKeyManager(InMemoryKeyPairRepository())
+
 
 def test_key_manager_generates_rsa_pair() -> None:
-    manager = RSAKeyManager()
-    key_pair = manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256)
+    manager = _manager()
+    key_pair = run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256))
 
     assert key_pair.algorithm is JWTAlgorithm.RS256
     assert key_pair.kid
@@ -29,8 +44,8 @@ def test_key_manager_generates_rsa_pair() -> None:
 
 
 def test_key_manager_generates_ec_pair() -> None:
-    manager = RSAKeyManager()
-    key_pair = manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.ES256)
+    manager = _manager()
+    key_pair = run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.ES256))
 
     assert key_pair.algorithm is JWTAlgorithm.ES256
     assert key_pair.public_key_pem.startswith("-----BEGIN PUBLIC KEY-----")
@@ -38,12 +53,10 @@ def test_key_manager_generates_ec_pair() -> None:
 
 def test_jwks_use_case_initialise_creates_one_active_key_per_algorithm() -> None:
     algorithms = (JWTAlgorithm.RS256, JWTAlgorithm.ES256, JWTAlgorithm.ES512)
-    usecase = JWKSetUseCase(
-        JWKSetConfig(key_size=_KEY_SIZE, algorithms=algorithms), RSAKeyManager()
-    )
-    usecase.initialise()
+    usecase = JWKSetUseCase(JWKSetConfig(key_size=_KEY_SIZE, algorithms=algorithms), _manager())
+    run(usecase.initialise())
 
-    keys = usecase.get_active_keys()
+    keys = run(usecase.get_active_keys())
     assert len(keys) == 3
     assert {key.algorithm for key in keys} == set(algorithms)
     assert all(key.is_active for key in keys)
@@ -112,41 +125,41 @@ def test_discovery_advertises_jwks_uri() -> None:
 
 
 def test_rotation_deactivates_expired_key_and_keeps_recent() -> None:
-    manager = RSAKeyManager()
+    manager = _manager()
     _plant_keys(manager, JWTAlgorithm.RS256, 91, 1)
     usecase = JWKSetUseCase(
         JWKSetConfig(key_size=_KEY_SIZE, algorithms=(JWTAlgorithm.RS256,)), manager
     )
 
-    active = usecase.get_active_keys()
+    active = run(usecase.get_active_keys())
 
     assert len(active) == 1
-    assert len(manager._keys) == 2
+    assert len(run(manager._repository.find_all())) == 2
 
 
 def test_rotation_removes_expired_keys_and_regenerates_when_all_stale() -> None:
-    manager = RSAKeyManager()
+    manager = _manager()
     _plant_keys(manager, JWTAlgorithm.RS256, 100, 98)
     usecase = JWKSetUseCase(
         JWKSetConfig(key_size=_KEY_SIZE, algorithms=(JWTAlgorithm.RS256,)), manager
     )
 
-    active = usecase.get_active_keys()
+    active = run(usecase.get_active_keys())
 
     assert len(active) == 1
-    assert len(manager._keys) == 1
+    assert len(run(manager._repository.find_all())) == 1
 
 
 def test_rotation_regenerates_a_missing_algorithm_alongside_active_others() -> None:
-    manager = RSAKeyManager()
-    manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256)
+    manager = _manager()
+    run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256))
     _plant_keys(manager, JWTAlgorithm.ES256, 100)
     usecase = JWKSetUseCase(
         JWKSetConfig(key_size=_KEY_SIZE, algorithms=(JWTAlgorithm.ES256, JWTAlgorithm.RS256)),
         manager,
     )
 
-    active = usecase.get_active_keys()
+    active = run(usecase.get_active_keys())
 
     assert {key.algorithm for key in active} == {JWTAlgorithm.ES256, JWTAlgorithm.RS256}
 
@@ -156,19 +169,30 @@ def test_settings_reject_unsupported_algorithm() -> None:
         Settings(jwks_algorithms=("RS256", "HS256"))
 
 
+def test_settings_reject_unsupported_key_store_type() -> None:
+    with pytest.raises(ValueError):
+        Settings(key_store_type="cassandra")
+
+
 def _is_valid_base64url(value: str) -> bool:
     padded = value + "=" * (-len(value) % 4)
     base64.urlsafe_b64decode(padded)
     return True
 
 
+def _manager() -> RSAKeyManager:
+    return RSAKeyManager(InMemoryKeyPairRepository())
+
+
 def _plant_keys(manager: RSAKeyManager, algorithm: JWTAlgorithm, *ages_days: int) -> None:
     """Remplit le magasin avec des clés datées artificiellement (en jours)."""
     now = datetime.now(timezone.utc)
-    manager._keys = [
-        replace(
-            manager.generate_key_pair(_KEY_SIZE, algorithm),
-            created_at=now - timedelta(days=age),
+    for age in ages_days:
+        run(
+            manager._repository.save(
+                replace(
+                    run(manager.generate_key_pair(_KEY_SIZE, algorithm)),
+                    created_at=now - timedelta(days=age),
+                )
+            )
         )
-        for age in ages_days
-    ]

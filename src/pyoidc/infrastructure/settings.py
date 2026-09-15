@@ -8,6 +8,8 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm
 
+_KEY_STORE_TYPES = ("memory", "sql")
+
 
 class Settings(BaseSettings):
     """Réglages du serveur, surchargeables via l'environnement (préfixe `PYOIDC_`)."""
@@ -20,6 +22,8 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # JWKS (RFC 7517)
+    key_store_type: str = "memory"
+    key_store_dsn: str = "sqlite:///pyoidc_keys.db"
     jwks_key_size: int = 4096
     jwks_algorithms: Annotated[tuple[str, ...], NoDecode] = tuple(
         algorithm.value for algorithm in ALL_SIGNING_ALGORITHMS
@@ -33,6 +37,14 @@ class Settings(BaseSettings):
         """Transforme `PYOIDC_JWKS_ALGORITHMS="RS256,ES256"` en tuple."""
         if isinstance(value, str):
             return tuple(part.strip() for part in value.split(",") if part.strip())
+        return value
+
+    @field_validator("key_store_type")
+    @classmethod
+    def _validate_key_store_type(cls, value: str) -> str:
+        """Garantit que le type de stockage de clés est supporté."""
+        if value not in _KEY_STORE_TYPES:
+            raise ValueError(f"Type de stockage de clés non supporté : {value}")
         return value
 
     @field_validator("jwks_algorithms")

@@ -31,25 +31,27 @@ class JWKSetUseCase:
         self._config = config
         self._key_manager = key_manager
 
-    def initialise(self) -> None:
+    async def initialise(self) -> None:
         """Génère une clé initiale par algorithme si le magasin est vide."""
         for algorithm in self._config.algorithms:
-            self._key_manager.ensure_active_key(self._config.key_size, algorithm)
+            await self._key_manager.ensure_active_key(self._config.key_size, algorithm)
 
-    def get_active_keys(self) -> list[KeyPair]:
+    async def get_active_keys(self) -> list[KeyPair]:
         """Retourne les clés actives prêtes à être exposées dans le JWKS."""
-        self._rotate_if_needed()
-        return self._key_manager.get_active_keys()
+        await self._rotate_if_needed()
+        return await self._key_manager.get_active_keys()
 
-    def _rotate_if_needed(self) -> None:
+    async def _rotate_if_needed(self) -> None:
         """Effectue la rotation : marque les clés expirées, nettoie les obsolètes."""
-        removed = self._key_manager.mark_expired_keys(
+        removed = await self._key_manager.mark_expired_keys(
             self._config.rotation_days, self._config.grace_period_days
         )
         if removed > 0:
             for algorithm in self._config.algorithms:
                 active = [
-                    key for key in self._key_manager.get_active_keys() if key.algorithm is algorithm
+                    key
+                    for key in await self._key_manager.get_active_keys()
+                    if key.algorithm is algorithm
                 ]
                 if not active:
-                    self._key_manager.ensure_active_key(self._config.key_size, algorithm)
+                    await self._key_manager.ensure_active_key(self._config.key_size, algorithm)
