@@ -1,9 +1,10 @@
 """Configuration de l'infrastructure (variable d'environnement, .env)."""
 
 from functools import cached_property
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm
 
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
 
     # JWKS (RFC 7517)
     jwks_key_size: int = 4096
-    jwks_algorithms: tuple[str, ...] = tuple(
+    jwks_algorithms: Annotated[tuple[str, ...], NoDecode] = tuple(
         algorithm.value for algorithm in ALL_SIGNING_ALGORITHMS
     )
     jwks_rotation_days: int = 90

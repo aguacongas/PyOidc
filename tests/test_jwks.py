@@ -5,7 +5,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
-from pytest import raises
+from pytest import MonkeyPatch, raises
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
@@ -53,6 +53,14 @@ def test_settings_default_to_all_supported_algorithms() -> None:
     settings = Settings()
 
     assert settings.jwks_algorithms == tuple(algorithm.value for algorithm in JWTAlgorithm)
+
+
+def test_settings_read_algorithm_list_from_environment(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("PYOIDC_JWKS_ALGORITHMS", "RS256,ES256")
+    settings = Settings(_env_file=None)
+
+    assert settings.jwks_algorithms == ("RS256", "ES256")
+    assert settings.jwks_signing_algorithms == (JWTAlgorithm.RS256, JWTAlgorithm.ES256)
 
 
 def test_jwks_endpoint_returns_keys_for_each_configured_algorithm() -> None:
