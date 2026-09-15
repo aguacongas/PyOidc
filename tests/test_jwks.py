@@ -176,9 +176,7 @@ def test_settings_reject_unsupported_key_store_type() -> None:
 
 
 def test_settings_client_seed_with_scalar_redirect_uris() -> None:
-    settings = Settings(
-        clients_seed=({"client_id": "x", "redirect_uris": "https://x.example/cb"},)
-    )
+    settings = Settings(clients_seed=({"client_id": "x", "redirect_uris": "https://x.example/cb"},))
 
     client = settings.seed_clients[0]
     assert client.redirect_uris == frozenset()

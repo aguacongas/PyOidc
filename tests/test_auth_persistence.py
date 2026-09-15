@@ -116,9 +116,7 @@ def test_client_factory_builds_memory() -> None:
 
 
 def test_client_factory_builds_sql() -> None:
-    repo = build_client_repository(
-        Settings(key_store_type="sql", key_store_dsn="sqlite:///memory")
-    )
+    repo = build_client_repository(Settings(key_store_type="sql", key_store_dsn="sqlite:///memory"))
 
     assert isinstance(repo, SQLClientRepository)
 
