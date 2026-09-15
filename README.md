@@ -42,17 +42,17 @@ les politiques de sécurité** — le glue entre la spec et la lib crypto.
 
 ## Endpoints prévus
 
-| Endpoint                              | Rôle                                   | État |
-| ------------------------------------- | -------------------------------------- | ---- |
-| `/.well-known/openid-configuration`   | Discovery                              | ✅ |
-| `/.well-known/jwks.json`              | Clés publiques de signature            | ✅ |
-| `/authorize`                          | Code / Implicit / Hybrid               | ⬜ |
-| `/token`                              | Échange code, refresh, client_credentials | ⬜ |
-| `/userinfo`                           | Claims de l'utilisateur                | ⬜ |
-| `/introspect`                         | Introspection de token (RFC 7662)      | ⬜ |
-| `/revoke`                             | Révocation de token (RFC 7009)         | ⬜ |
-| `/registration`                       | Client registration dynamique (option) | ⬜ |
-| `/end_session`                        | RP-Initiated Logout                    | ⬜ |
+| Endpoint                            | Rôle                                      | État |
+| ----------------------------------- | ----------------------------------------- | ---- |
+| `/.well-known/openid-configuration` | Discovery                                 | ✅   |
+| `/.well-known/jwks.json`            | Clés publiques de signature               | ✅   |
+| `/authorize`                        | Code / Implicit / Hybrid                  | ⬜   |
+| `/token`                            | Échange code, refresh, client_credentials | ⬜   |
+| `/userinfo`                         | Claims de l'utilisateur                   | ⬜   |
+| `/introspect`                       | Introspection de token (RFC 7662)         | ⬜   |
+| `/revoke`                           | Révocation de token (RFC 7009)            | ⬜   |
+| `/registration`                     | Client registration dynamique (option)    | ⬜   |
+| `/end_session`                      | RP-Initiated Logout                       | ⬜   |
 
 ## Documentation
 
@@ -64,7 +64,7 @@ les politiques de sécurité** — le glue entre la spec et la lib crypto.
 Le code suit **Clean Architecture** : chaque cercle ne dépend que de son cercle intérieur
 (`domain` ← `application` ← `interfaces` ← `infrastructure`).
 
-```
+```text
 src/pyoidc/
   domain/          entités OIDC (Client, Grant, Scope, Claims) — zéro dépendance
   application/     cas d'utilisation : émission code/token, validation, consentement
@@ -133,7 +133,6 @@ gh secret set SONAR_SECRET
   font le travail — on implémente **la spec**, pas la crypto.
 - Chaque feature = un endpoint + ses tests.
 
-[TheIdServer]: https://github.com/aguacongas/TheIdServer
 [OAuth 2.0 Core]: https://datatracker.ietf.org/doc/html/rfc6749
 [OAuth 2.0 Bearer Tokens]: https://datatracker.ietf.org/doc/html/rfc6750
 [OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html

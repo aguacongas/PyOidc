@@ -12,9 +12,10 @@ import pytest
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
 from pyoidc.infrastructure.jwks import DefaultKeyManager
+from pyoidc.infrastructure.persistence.base import async_dsn
 from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
-from pyoidc.infrastructure.persistence.sql import SQLKeyPairRepository, _async_dsn
+from pyoidc.infrastructure.persistence.sql import KeyPairRow, SQLKeyPairRepository, _from_row
 from pyoidc.infrastructure.settings import Settings
 
 _KEY_SIZE = 2048
@@ -42,9 +43,9 @@ def test_sql_repo_delete_absent_key_is_noop(tmp_path: Path) -> None:
 
 
 def test_async_dsn_rewrites_dialect() -> None:
-    assert _async_dsn("sqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
-    assert _async_dsn("postgresql://user@host/db") == "postgresql+asyncpg://user@host/db"
-    assert _async_dsn("sqlite+aiosqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
+    assert async_dsn("sqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
+    assert async_dsn("postgresql://user@host/db") == "postgresql+asyncpg://user@host/db"
+    assert async_dsn("sqlite+aiosqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
 
 
 def test_factory_builds_memory_repository() -> None:
@@ -148,3 +149,20 @@ def test_sql_repo_rotation_persisted(tmp_path: Path) -> None:
     assert len(run(repo.find_all())) == 1
     assert run(repo.find_all())[0].is_active is True
     _close(repo)
+
+
+def test_sql_key_pair_row_preserves_aware_datetime() -> None:
+    aware = datetime.now(timezone.utc)
+    row = KeyPairRow(
+        kid="key-1",
+        algorithm="RS256",
+        private_key_pem="-----BEGIN PRIVATE KEY-----",
+        public_key_pem="-----BEGIN PUBLIC KEY-----",
+        created_at=aware,
+        is_active=True,
+    )
+
+    key_pair = _from_row(row)
+
+    assert key_pair.created_at.tzinfo is not None
+    assert key_pair.created_at.tzinfo == timezone.utc

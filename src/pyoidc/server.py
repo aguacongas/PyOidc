@@ -7,13 +7,23 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from pyoidc.application.authorize import AuthorizeConfig, AuthorizeUseCase
 from pyoidc.application.discovery import DiscoveryConfig, DiscoveryUseCase
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
+from pyoidc.application.token import TokenConfig, TokenUseCase
+from pyoidc.domain.jwks import JWTAlgorithm
 from pyoidc.infrastructure.jwks import DefaultKeyManager
-from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
+from pyoidc.infrastructure.persistence.factory import (
+    build_authorization_code_repository,
+    build_client_repository,
+    build_key_pair_repository,
+)
 from pyoidc.infrastructure.settings import Settings
+from pyoidc.infrastructure.tokens import PyJWTTokenManager
+from pyoidc.interfaces.api.authorize import authorize_router
 from pyoidc.interfaces.api.discovery import discovery_router
 from pyoidc.interfaces.api.jwks import jwk_set_router
+from pyoidc.interfaces.api.token import token_router
 
 _PACKAGE_VERSION = "0.1.0"
 
@@ -36,16 +46,49 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         grace_period_days=settings.jwks_grace_period_days,
     )
     jwks_usecase = JWKSetUseCase(jwks_config, key_manager)
+    token_manager = PyJWTTokenManager(key_manager)
+
+    client_repository = build_client_repository(settings)
+    code_repository = build_authorization_code_repository(settings)
+
+    authorize_usecase = AuthorizeUseCase(
+        AuthorizeConfig(
+            code_ttl_seconds=settings.authorization_code_ttl_seconds,
+            signing_algorithm=settings.jwks_signing_algorithms[0].value
+            if settings.jwks_signing_algorithms
+            else "RS256",
+        ),
+        client_repository,
+        code_repository,
+    )
+    token_usecase = TokenUseCase(
+        TokenConfig(
+            issuer=settings.issuer,
+            signing_algorithm=settings.jwks_signing_algorithms[0]
+            if settings.jwks_signing_algorithms
+            else JWTAlgorithm.RS256,
+            access_token_ttl_seconds=settings.access_token_ttl_seconds,
+        ),
+        client_repository,
+        code_repository,
+        token_manager,
+    )
 
     @asynccontextmanager
     async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-        """Prépare le stockage puis génère une clé initiale par algorithme."""
+        """Prépare les stockages, alimente le registre client puis génère les clés."""
         await key_repository.initialise()
+        await client_repository.initialise()
+        await code_repository.initialise()
+        for client in settings.seed_clients:
+            await client_repository.save(client)
         await jwks_usecase.initialise()
         try:
             yield
         finally:
             await key_repository.close()
+            await client_repository.close()
+            await code_repository.close()
 
     app = FastAPI(
         title="PyOidc",
@@ -55,6 +98,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(discovery_router(DiscoveryUseCase(config)))
     app.include_router(jwk_set_router(jwks_usecase))
+    app.include_router(authorize_router(authorize_usecase))
+    app.include_router(token_router(token_usecase))
     return app
 
 

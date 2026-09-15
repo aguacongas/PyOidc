@@ -9,18 +9,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, select
-from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from pyoidc.domain.jwks import JWTAlgorithm, KeyPair
+from pyoidc.infrastructure.persistence.base import PersistenceBase, async_dsn
 
 
-class _KeyPairTable(DeclarativeBase):
-    """Base déclarative de la persistance SQL."""
-
-
-class KeyPairRow(_KeyPairTable):
+class KeyPairRow(PersistenceBase):
     """Table stockant une paire de clés (clé privée en PEM, RFC 7517)."""
 
     __tablename__ = "key_pairs"
@@ -34,23 +30,6 @@ class KeyPairRow(_KeyPairTable):
     key_size: Mapped[int] = mapped_column(Integer, default=4096)
 
 
-_ASYNC_DIALECTS = {
-    "sqlite": "aiosqlite",
-    "postgresql": "asyncpg",
-    "mysql": "aiomysql",
-}
-
-
-def _async_dsn(dsn: str) -> str:
-    """Adapte un DSN SQLAlchemy synchrone vers son dialecte asynchrone."""
-    url = make_url(dsn)
-    driver = _ASYNC_DIALECTS.get(url.get_backend_name())
-    if driver is not None and url.drivername == url.get_backend_name():
-        async_url = url.set(drivername=f"{url.get_backend_name()}+{driver}")
-        return async_url.render_as_string(hide_password=False)
-    return dsn
-
-
 class SQLKeyPairRepository:
     """Persiste les paires de clés dans une table relationnelle partagée.
 
@@ -60,13 +39,13 @@ class SQLKeyPairRepository:
 
     def __init__(self, dsn: str) -> None:
         """Prépare le moteur asynchrone pour le DSN fourni."""
-        self._engine: AsyncEngine = create_async_engine(_async_dsn(dsn))
+        self._engine: AsyncEngine = create_async_engine(async_dsn(dsn))
         self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False)
 
     async def initialise(self) -> None:
         """Crée la table ``key_pairs`` si elle n'existe pas encore."""
         async with self._engine.begin() as connection:
-            await connection.run_sync(_KeyPairTable.metadata.create_all)
+            await connection.run_sync(PersistenceBase.metadata.create_all)
 
     async def close(self) -> None:
         """Ferme proprement le moteur (libère les connexions)."""

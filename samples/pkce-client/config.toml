@@ -1,0 +1,12 @@
+# Configuration du client de démo Authorization Code + PKCE.
+#
+# Ce fichier est chargé automatiquement au démarrage de l'application.
+# Les variables d'environnement OIDC_* restent prioritaires.
+# Pour surcharger le fichier : OIDC_SETTINGS_FILE=config.local.toml
+
+[settings]
+issuer = "http://127.0.0.1:8000"
+client_id = "sample-pkce-client"
+redirect_uri = "http://127.0.0.1:5173/callback"
+host = "127.0.0.1"
+port = 5173
