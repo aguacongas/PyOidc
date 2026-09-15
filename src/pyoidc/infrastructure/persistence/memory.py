@@ -6,31 +6,43 @@ tests unitaires et le développement local uniquement.
 
 from __future__ import annotations
 
+import asyncio
+
 from pyoidc.domain.jwks import KeyPair
 
 
 class InMemoryKeyPairRepository:
-    """Maintient les paires de clés dans un dictionnaire en mémoire."""
+    """Maintient les paires de clés dans un dictionnaire en mémoire.
+
+    Le magasin partage son état entre toutes les requêtes du processus ;
+    un verrou asynchrone série les opérations lecture/écriture comme le
+    ferait n'importe quel stockage partagé (fidélité au contrat async).
+    """
 
     def __init__(self) -> None:
-        """Initialise le magasin vide."""
+        """Initialise le magasin vide et son verrou d'accès."""
         self._keys: dict[str, KeyPair] = {}
+        self._lock = asyncio.Lock()
 
     async def save(self, key_pair: KeyPair) -> None:
         """Stocke la paire de clés (insertion ou mise à jour par ``kid``)."""
-        self._keys[key_pair.kid] = key_pair
+        async with self._lock:
+            self._keys[key_pair.kid] = key_pair
 
     async def find_all(self) -> list[KeyPair]:
         """Retourne toutes les paires de clés, dans l'ordre d'insertion."""
-        return list(self._keys.values())
+        async with self._lock:
+            return list(self._keys.values())
 
     async def update(self, key_pair: KeyPair) -> None:
         """Remplace la paire de clés existante (par ``kid``)."""
-        self._keys[key_pair.kid] = key_pair
+        async with self._lock:
+            self._keys[key_pair.kid] = key_pair
 
     async def delete(self, kid: str) -> None:
         """Retire la paire de clés identifiée par ``kid``, ignoré si absente."""
-        self._keys.pop(kid, None)
+        async with self._lock:
+            self._keys.pop(kid, None)
 
     async def initialise(self) -> None:
         """Rien à préparer : le magasin existe dès la construction."""

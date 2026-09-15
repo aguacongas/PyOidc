@@ -62,8 +62,10 @@ def test_factory_builds_sql_repository() -> None:
 
 
 def test_factory_rejects_unknown_store_type() -> None:
+    settings = Settings.model_construct(key_store_type="cassandra")
+
     with pytest.raises(ValueError, match="non supporté"):
-        build_key_pair_repository(Settings(key_store_type="cassandra"))
+        build_key_pair_repository(settings)
 
 
 def test_sql_repo_normalises_old_naive_datetime(tmp_path: Path) -> None:
