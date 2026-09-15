@@ -9,7 +9,8 @@ from fastapi import FastAPI
 
 from pyoidc.application.discovery import DiscoveryConfig, DiscoveryUseCase
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
-from pyoidc.infrastructure.jwks import RSAKeyManager
+from pyoidc.infrastructure.jwks import DefaultKeyManager
+from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
 from pyoidc.infrastructure.settings import Settings
 from pyoidc.interfaces.api.discovery import discovery_router
 from pyoidc.interfaces.api.jwks import jwk_set_router
@@ -26,7 +27,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         signing_algorithms=settings.jwks_algorithms,
     )
 
-    key_manager = RSAKeyManager()
+    key_repository = build_key_pair_repository(settings)
+    key_manager = DefaultKeyManager(key_repository)
     jwks_config = JWKSetConfig(
         key_size=settings.jwks_key_size,
         algorithms=settings.jwks_signing_algorithms,
@@ -37,9 +39,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-        """Génère une clé initiale par algorithme au démarrage du serveur."""
-        jwks_usecase.initialise()
-        yield
+        """Prépare le stockage puis génère une clé initiale par algorithme."""
+        await key_repository.initialise()
+        await jwks_usecase.initialise()
+        try:
+            yield
+        finally:
+            await key_repository.close()
 
     app = FastAPI(
         title="PyOidc",
