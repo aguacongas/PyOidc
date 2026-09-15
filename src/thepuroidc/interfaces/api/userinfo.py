@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Annotated
 
 from fastapi import APIRouter, Header, Response
 
@@ -19,7 +20,9 @@ def userinfo_router(usecase: UserInfoUseCase) -> APIRouter:
     router = APIRouter(tags=["userinfo"])
 
     @router.get("/userinfo", summary="Endpoint UserInfo (claims de l'utilisateur)")
-    async def userinfo(authorization: str | None = Header(default=None)) -> Response:
+    async def userinfo(
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> Response:
         token = _extract_bearer_token(authorization)
         if token is None:
             return _bearer_error(

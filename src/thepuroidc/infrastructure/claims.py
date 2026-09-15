@@ -22,7 +22,7 @@ class InMemoryClaimsProvider:
         """Injection des profils (par défaut : l'annuaire de démonstration)."""
         self._profiles = profiles if profiles is not None else _DEMO_PROFILES
 
-    async def get_claims(self, subject: str) -> UserClaims:
+    def get_claims(self, subject: str) -> UserClaims:
         """Retourne les claims de l'utilisateur ``subject`` (vide si inconnu)."""
         return UserClaims(subject=subject, claims=dict(self._profiles.get(subject, {})))
 

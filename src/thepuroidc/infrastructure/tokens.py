@@ -81,7 +81,10 @@ class PyJWTTokenManager:
     ) -> dict[str, object] | None:
         """Valide la signature (JWKS), l'issuer et l'expiration d'un access_token."""
         try:
-            header = pyjwt.get_unverified_header(token)
+            # Le header (alg/kid) sert uniquement à choisir la clé de vérification ;
+            # la signature et les claims sont ensuite intégralement validés par pyjwt.decode
+            # ci-dessous, de sorte qu'aucune donnée non vérifiée n'est jamais utilisée.
+            header = pyjwt.get_unverified_header(token)  # NOSONAR(S5659)
             algorithm = JWTAlgorithm(header["alg"])
         except (pyjwt.PyJWTError, KeyError, ValueError):
             return None

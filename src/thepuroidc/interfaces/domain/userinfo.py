@@ -20,6 +20,6 @@ class ClaimsProvider(Protocol):
     root selon la configuration du serveur.
     """
 
-    async def get_claims(self, subject: str) -> UserClaims:
+    def get_claims(self, subject: str) -> UserClaims:
         """Retourne les claims de l'utilisateur identifié par ``subject``."""
         ...
