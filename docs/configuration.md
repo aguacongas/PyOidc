@@ -1,6 +1,6 @@
 # Configuration du serveur
 
-La configuration se fait par **variables d'environnement** (préfixe `PYOIDC_`), par
+La configuration se fait par **variables d'environnement** (préfixe `THEPUROIDC_`), par
 fichier **`.env`** placé à la racine du projet (chargé automatiquement au démarrage),
 ou par le fichier **`config.toml`** du dépôt qui fournit des **défauts de démonstration**
 (l'environnement reste prioritaire sur le fichier).
@@ -10,20 +10,20 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 
 | Variable | Défaut | Description |
 | --- | --- | --- |
-| `PYOIDC_ISSUER` | `http://localhost:8000` | Identifiant public de l'émetteur : l'URL où le serveur est joignable. Doit être stable et, en production, en **HTTPS**. |
-| `PYOIDC_BASE_URL` | *(issuer)* | Base utilisée pour construire les URL des endpoints publiées dans le document de discovery (`/authorize`, `/token`, `/userinfo`, `/.well-known/jwks.json`, …). Par défaut : l'issuer. |
-| `PYOIDC_HOST` | `127.0.0.1` | Interface réseau sur laquelle écoute le serveur Uvicorn. |
-| `PYOIDC_PORT` | `8000` | Port d'écoute. |
-| `PYOIDC_KEY_STORE_TYPE` | `memory` | Type de stockage des clés de signature (`memory` pour le développement local, `sql` pour la production). |
-| `PYOIDC_KEY_STORE_DSN` | `sqlite:///pyoidc_keys.db` | Chaîne de connexion SQLAlchemy du magasin de clés (utilisée lorsque `KEY_STORE_TYPE=sql`). |
-| `PYOIDC_JWKS_KEY_SIZE` | `4096` | Taille des clés RSA générées (bits) pour la signature des jetons. |
-| `PYOIDC_JWKS_ALGORITHMS` | *(tous)* | Liste (séparée par des virgules) des algorithmes de signature fournis. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`. |
-| `PYOIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
-| `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé. |
-| `PYOIDC_AUTHORIZATION_CODE_TTL_SECONDS` | `600` | Durée de vie du code d'autorisation (secondes). |
-| `PYOIDC_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Durée de vie de l'access token émis (secondes). |
-| `PYOIDC_SETTINGS_FILE` | `config.toml` | Chemin du fichier TOML des défauts du projet (table `[settings]`), notamment les clients seed. |
-| `PYOIDC_CLIENTS_SEED` | *(config.toml)* | Liste JSON de clients seed au démarrage (format `[{"client_id":"...","client_secret":"...","redirect_uris":["..."],"scopes":"openid","client_type":"public"}]`). Par défaut, `config.toml` fournit le client de démo `sample-pkce-client`. |
+| `THEPUROIDC_ISSUER` | `http://localhost:8000` | Identifiant public de l'émetteur : l'URL où le serveur est joignable. Doit être stable et, en production, en **HTTPS**. |
+| `THEPUROIDC_BASE_URL` | *(issuer)* | Base utilisée pour construire les URL des endpoints publiées dans le document de discovery (`/authorize`, `/token`, `/userinfo`, `/.well-known/jwks.json`, …). Par défaut : l'issuer. |
+| `THEPUROIDC_HOST` | `127.0.0.1` | Interface réseau sur laquelle écoute le serveur Uvicorn. |
+| `THEPUROIDC_PORT` | `8000` | Port d'écoute. |
+| `THEPUROIDC_KEY_STORE_TYPE` | `memory` | Type de stockage des clés de signature (`memory` pour le développement local, `sql` pour la production). |
+| `THEPUROIDC_KEY_STORE_DSN` | `sqlite:///thepuroidc_keys.db` | Chaîne de connexion SQLAlchemy du magasin de clés (utilisée lorsque `KEY_STORE_TYPE=sql`). |
+| `THEPUROIDC_JWKS_KEY_SIZE` | `4096` | Taille des clés RSA générées (bits) pour la signature des jetons. |
+| `THEPUROIDC_JWKS_ALGORITHMS` | *(tous)* | Liste (séparée par des virgules) des algorithmes de signature fournis. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`. |
+| `THEPUROIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
+| `THEPUROIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé. |
+| `THEPUROIDC_AUTHORIZATION_CODE_TTL_SECONDS` | `600` | Durée de vie du code d'autorisation (secondes). |
+| `THEPUROIDC_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Durée de vie de l'access token émis (secondes). |
+| `THEPUROIDC_SETTINGS_FILE` | `config.toml` | Chemin du fichier TOML des défauts du projet (table `[settings]`), notamment les clients seed. |
+| `THEPUROIDC_CLIENTS_SEED` | *(config.toml)* | Liste JSON de clients seed au démarrage (format `[{"client_id":"...","client_secret":"...","redirect_uris":["..."],"scopes":"openid","client_type":"public"}]`). Par défaut, `config.toml` fournit le client de démo `sample-pkce-client`. |
 
 ### `issuer` vs `base_url`
 
@@ -52,7 +52,7 @@ réécrit automatiquement vers le dialecte asynchrone (ex. `sqlite:///keys.db` �
 - Au démarrage, une clé est générée **par algorithme configuré** et exposée sur
   `/.well-known/jwks.json` (format JWK, champs `kty`, `kid`, `use`, `alg`, plus `n`/`e`
   pour RSA, `crv`/`x`/`y` pour EC).
-- `PYOIDC_JWKS_ALGORITHMS` permet de choisir les algorithmes fournis.
+- `THEPUROIDC_JWKS_ALGORITHMS` permet de choisir les algorithmes fournis.
 - La rotation est déclenchée à chaque lecture du JWKS : les clés plus vieilles que
   `rotation_days` sont retirées, les clés hors `grace_period_days` sont supprimées,
   et une nouvelle clé est générée si nécessaire.
@@ -63,8 +63,8 @@ Le dépôt embarque un `config.toml` (racine du projet) qui déclare les **défa
 de démonstration**. Sa table `[settings]` est chargée automatiquement sous les
 défauts, avec la hiérarchie de priorité suivante :
 
-```
-arguments d'init > variables d'environnement (PYOIDC_*) > config.toml > défauts du code
+```text
+arguments d'init > variables d'environnement (THEPUROIDC_*) > config.toml > défauts du code
 ```
 
 Le fichier ne contient actuellement que le **client de démo du flow
@@ -74,13 +74,13 @@ Authorization Code + PKCE** (`sample-pkce-client`, client *public*, callback
 
 Pour personnaliser ou ajouter des clients sans toucher au code, deux options :
 
-- surcharger le chemin via `PYOIDC_SETTINGS_FILE` (ex. copier
+- surcharger le chemin via `THEPUROIDC_SETTINGS_FILE` (ex. copier
   `config.toml` vers `config.local.toml`, l'éditer, puis
-  `PYOIDC_SETTINGS_FILE=config.local.toml uv run python -m pyoidc`) ;
+  `THEPUROIDC_SETTINGS_FILE=config.local.toml uv run python -m thepuroidc`) ;
 - passer la liste complète par l'environnement :
-  `PYOIDC_CLIENTS_SEED='[{"client_id": "my-app", ...}]'` (remplace `config.toml`).
+  `THEPUROIDC_CLIENTS_SEED='[{"client_id": "my-app", ...}]'` (remplace `config.toml`).
 
-> Note : `PYOIDC_CLIENTS_SEED` **remplace** la liste par défaut, il ne la
+> Note : `THEPUROIDC_CLIENTS_SEED` **remplace** la liste par défaut, il ne la
 > fusionne pas. Déclarez la liste complète des clients souhaités.
 
 ## Exemples
@@ -88,21 +88,21 @@ Pour personnaliser ou ajouter des clients sans toucher au code, deux options :
 ### Lancement local simple (en mémoire)
 
 ```sh
-PYOIDC_ISSUER=http://localhost:8000 uv run python -m pyoidc
+THEPUROIDC_ISSUER=http://localhost:8000 uv run python -m thepuroidc
 ```
 
 ### Stockage SQL pour la production
 
 ```sh
-PYOIDC_ISSUER=https://id.example.com
-PYOIDC_KEY_STORE_TYPE=sql
-PYOIDC_KEY_STORE_DSN=postgresql+asyncpg://pyoidc:secret@db-host/pyoidc
+THEPUROIDC_ISSUER=https://id.example.com
+THEPUROIDC_KEY_STORE_TYPE=sql
+THEPUROIDC_KEY_STORE_DSN=postgresql+asyncpg://thepuroidc:secret@db-host/thepuroidc
 ```
 
 ### Derrière un reverse proxy TLS
 
 ```sh
-PYOIDC_ISSUER=https://id.example.com uv run uvicorn pyoidc.server:app --host 127.0.0.1 --port 8000
+THEPUROIDC_ISSUER=https://id.example.com uv run uvicorn thepuroidc.server:app --host 127.0.0.1 --port 8000
 ```
 
 ## Notes d'implémentation
@@ -113,7 +113,7 @@ PYOIDC_ISSUER=https://id.example.com uv run uvicorn pyoidc.server:app --host 127
 - Les contrats (ports) de gestion des clés (`KeyManager`), de persistance
   (`KeyPairRepository`), des clients (`ClientRepository`) et des codes
   d'autorisation (`AuthorizationCodeRepository`) sont des Protocol vivant
-  dans `pyoidc/interfaces/` ; seules les implémentations `memory` et `sql`
+  dans `thepuroidc/interfaces/` ; seules les implémentations `memory` et `sql`
   sont livrées dans cette version.
   Des implémentations Redis et MongoDB peuvent être ajoutées comme extras optionnels.
 - Les endpoints `/authorize` et `/token` supportent le flux Authorization Code

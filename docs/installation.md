@@ -3,14 +3,14 @@
 ## Prérequis
 
 - **Python ≥ 3.10** (testé sur 3.13)
-- **uv** — gestionnaire de dépendances Python : https://docs.astral.sh/uv/getting-started/installation/
+- **uv** — gestionnaire de dépendances Python : <https://docs.astral.sh/uv/getting-started/installation/>
 - **Git**
 
 ## 1. Récupérer le code
 
 ```sh
-git clone git@github.com:aguacongas/PyOidc.git
-cd PyOidc
+git clone git@github.com:aguacongas/ThePurOidc.git
+cd ThePurOidc
 ```
 
 ## 2. Installer les dépendances
@@ -23,10 +23,10 @@ uv sync --extra dev   # + outils de qualité (ruff, mypy, pytest…) pour le dé
 ## 3. Lancer le serveur
 
 ```sh
-uv run python -m pyoidc
+uv run python -m thepuroidc
 ```
 
-Le serveur écoute sur `http://127.0.0.1:8000` (surchargeable via `PYOIDC_HOST` / `PYOIDC_PORT`).
+Le serveur écoute sur `http://127.0.0.1:8000` (surchargeable via `THEPUROIDC_HOST` / `THEPUROIDC_PORT`).
 
 Vérification :
 
@@ -41,14 +41,14 @@ Un document JSON contenant l'`issuer` et les endpoints doit être retourné.
 Construire et installer la distribution :
 
 ```sh
-uv build                     # génère dist/pyoidc-*.whl et -*.tar.gz
-uv pip install dist/pyoidc-*.whl
+uv build                     # génère dist/thepuroidc-*.whl et -*.tar.gz
+uv pip install dist/thepuroidc-*.whl
 ```
 
 Démarrage :
 
 ```sh
-uv run uvicorn pyoidc.server:app --host 127.0.0.1 --port 8000
+uv run uvicorn thepuroidc.server:app --host 127.0.0.1 --port 8000
 ```
 
 ## 5. Déployer en production
@@ -57,13 +57,13 @@ Le projet **ne gère pas TLS lui-même** (choix d'architecture : la crypto de tr
 confiée à l'infrastructure). Le déploiement recommandé est donc derrière un reverse proxy
 (nginx, Caddy, Traefik) qui termine le TLS :
 
-```
-Client ──HTTPS──> Reverse proxy (TLS) ──HTTP──> PyOidc (127.0.0.1:8000)
+```text
+Client ──HTTPS──> Reverse proxy (TLS) ──HTTP──> ThePurOidc (127.0.0.1:8000)
 ```
 
 Points clés :
 
-- Définir `PYOIDC_ISSUER` sur **l'URL publique HTTPS** du serveur (l'un des identifiants
+- Définir `THEPUROIDC_ISSUER` sur **l'URL publique HTTPS** du serveur (l'un des identifiants
   que la spec exige de publier). Il servira de base aux URL des endpoints.
 - L'issuer doit être stable dans le temps : changer d'URL publique invalide les
   `id_token` et access tokens émis précédemment.
@@ -73,8 +73,8 @@ Points clés :
 Exemple minimal derrière nginx :
 
 ```sh
-export PYOIDC_ISSUER=https://id.example.com
-uv run uvicorn pyoidc.server:app --host 127.0.0.1 --port 8000
+export THEPUROIDC_ISSUER=https://id.example.com
+uv run uvicorn thepuroidc.server:app --host 127.0.0.1 --port 8000
 ```
 
 ```nginx
@@ -94,5 +94,5 @@ server {
 
 | Symptôme | Cause probable |
 | --- | --- |
-| `No module named pyoidc` | commande lancée hors du répertoire du projet, ou `uv sync` non exécuté |
+| `No module named thepuroidc` | commande lancée hors du répertoire du projet, ou `uv sync` non exécuté |
 | Le CI Sonar échoue | secret `SONAR_SECRET` non défini sur le dépôt GitHub (voir `docs/configuration.md`) |

@@ -1,9 +1,9 @@
-# Configuration par défaut du serveur PyOidc (chargée à la racine du dépôt).
+# Configuration par défaut du serveur ThePurOidc (chargée à la racine du dépôt).
 #
 # Les valeurs ci-dessous sont des défauts de démonstration : elles sont
-# surchargées par les variables d'environnement `PYOIDC_*`. Pour
+# surchargées par les variables d'environnement `THEPUROIDC_*`. Pour
 # personnaliser, copiez ce fichier et pointez le serveur dessus via
-# `PYOIDC_SETTINGS_FILE`.
+# `THEPUROIDC_SETTINGS_FILE`.
 
 # seeds clients enregistrés au démarrage du serveur :
 # - client_id      : identifiant du client

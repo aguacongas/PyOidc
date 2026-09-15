@@ -9,14 +9,14 @@ from typing import TypeVar
 
 import pytest
 
-from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
-from pyoidc.domain.jwks import JWTAlgorithm
-from pyoidc.infrastructure.jwks import DefaultKeyManager
-from pyoidc.infrastructure.persistence.base import async_dsn
-from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
-from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
-from pyoidc.infrastructure.persistence.sql import KeyPairRow, SQLKeyPairRepository, _from_row
-from pyoidc.infrastructure.settings import Settings
+from thepuroidc.application.jwks import JWKSetConfig, JWKSetUseCase
+from thepuroidc.domain.jwks import JWTAlgorithm
+from thepuroidc.infrastructure.jwks import DefaultKeyManager
+from thepuroidc.infrastructure.persistence.base import async_dsn
+from thepuroidc.infrastructure.persistence.factory import build_key_pair_repository
+from thepuroidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
+from thepuroidc.infrastructure.persistence.sql import KeyPairRow, SQLKeyPairRepository, _from_row
+from thepuroidc.infrastructure.settings import Settings
 
 _KEY_SIZE = 2048
 

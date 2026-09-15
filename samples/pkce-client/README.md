@@ -1,7 +1,7 @@
 # Client démo : Authorization Code + PKCE
 
 Application FastAPI de démonstration : une *relying party* qui se connecte à
-un serveur PyOidc via le flow **Authorization Code** (RFC 6749) avec
+un serveur ThePurOidc via le flow **Authorization Code** (RFC 6749) avec
 **PKCE** (RFC 7636).
 
 Le client effectue :
@@ -17,10 +17,10 @@ Le client effectue :
 
 Prérequis : `uv` et une version récente de Python.
 
-1. Démarrer le serveur PyOidc (depuis la racine du dépôt) :
+1. Démarrer le serveur ThePurOidc (depuis la racine du dépôt) :
 
    ```bash
-   uv run python -m pyoidc
+   uv run python -m thepuroidc
    ```
 
    Le serveur enregistre par défaut le client de démo

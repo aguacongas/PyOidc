@@ -1,4 +1,4 @@
-# Règles de codage — PyOidc
+# Règles de codage — ThePurOidc
 
 Ce guide énonce les règles de codage Python du projet. **L'arbitre machine est le
 `pyproject.toml`** (config `ruff`, `mypy`, `pytest`) : en cas de doute, ce qui passe
@@ -67,7 +67,7 @@ Chaque feature n'est **done** que si elle respecte l'ensemble :
 - [ ] **SonarCloud** — aucune nouvelle issue sur le diff de la PR
 - [ ] **Documentation à jour dans la même PR** :
   - [ ] `README.md` — table des endpoints, plan d'implémentation, mention de la feature
-  - [ ] `docs/configuration.md` — nouveaux paramètres `PYOIDC_*` (par feature)
+  - [ ] `docs/configuration.md` — nouveaux paramètres `THEPUROIDC_*` (par feature)
   - [ ] `docs/installation.md` — si le déploiement/lancement change
   - [ ] Disposer/vérifier les liens `#spec` de la feature
 
@@ -92,7 +92,7 @@ extérieur.
 
 Concrètement :
 
-- `src/pyoidc/` — code de l'application (FastAPI).
+- `src/thepuroidc/` — code de l'application (FastAPI).
 - `tests/` — tests unitaires et d'intégration (TestClient httpx).
 - **Composition root** unique (`server.py`) : c'est le seul endroit qui assemble
   infrastructure + adaptateurs + usecases (injection de dépendances).
