@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS
+
 
 class DiscoveryDocument(BaseModel):
     """Métadonnées publiées sur `/.well-known/openid-configuration`."""
@@ -22,5 +24,7 @@ class DiscoveryDocument(BaseModel):
     response_modes_supported: list[str] = Field(default_factory=lambda: ["query", "fragment"])
     grant_types_supported: list[str] = Field(default_factory=lambda: ["authorization_code"])
     subject_types_supported: list[str] = Field(default_factory=lambda: ["public"])
-    id_token_signing_alg_values_supported: list[str] = Field(default_factory=lambda: ["RS256"])
+    id_token_signing_alg_values_supported: list[str] = Field(
+        default_factory=lambda: [algorithm.value for algorithm in ALL_SIGNING_ALGORITHMS]
+    )
     claims_supported: list[str] = Field(default_factory=lambda: ["sub", "iss", "aud", "exp", "iat"])

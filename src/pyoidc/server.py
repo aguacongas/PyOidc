@@ -20,12 +20,16 @@ _PACKAGE_VERSION = "0.1.0"
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Assemble l'application FastAPI ; câble les usecases avec les réglages fournis."""
     settings = settings if settings is not None else Settings()
-    config = DiscoveryConfig(issuer=settings.issuer, base_url=settings.base_url)
+    config = DiscoveryConfig(
+        issuer=settings.issuer,
+        base_url=settings.base_url,
+        signing_algorithms=settings.jwks_algorithms,
+    )
 
     key_manager = RSAKeyManager()
     jwks_config = JWKSetConfig(
         key_size=settings.jwks_key_size,
-        algorithm=settings.jwks_algorithm,
+        algorithms=settings.jwks_signing_algorithms,
         rotation_days=settings.jwks_rotation_days,
         grace_period_days=settings.jwks_grace_period_days,
     )
@@ -33,7 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-        """Génère la clé initiale au démarrage du serveur."""
+        """Génère une clé initiale par algorithme au démarrage du serveur."""
         jwks_usecase.initialise()
         yield
 
@@ -44,7 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=_lifespan,
     )
     app.include_router(discovery_router(DiscoveryUseCase(config)))
-    app.include_router(jwk_set_router(jwks_usecase, settings.jwks_algorithm))
+    app.include_router(jwk_set_router(jwks_usecase))
     return app
 
 

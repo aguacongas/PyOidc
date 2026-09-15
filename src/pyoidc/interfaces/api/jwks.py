@@ -8,16 +8,13 @@ from pyoidc.application.jwks import JWKSetUseCase
 from pyoidc.interfaces.schemas.jwks import JWKKeyResponse, JWKSetResponse
 
 
-def jwk_set_router(usecase: JWKSetUseCase, algorithm: str) -> APIRouter:
+def jwk_set_router(usecase: JWKSetUseCase) -> APIRouter:
     """Construit le routeur FastAPI exposant les clés publiques du serveur."""
     router = APIRouter(tags=["jwks"])
 
     @router.get("/.well-known/jwks.json", summary="JSON Web Key Set")
     def jwk_set() -> JWKSetResponse:
-        keys = [
-            JWKKeyResponse.from_key_pair(key_pair, algorithm)
-            for key_pair in usecase.get_active_keys()
-        ]
+        keys = [JWKKeyResponse.from_key_pair(key_pair) for key_pair in usecase.get_active_keys()]
         return JWKSetResponse(keys=keys)
 
     return router
