@@ -52,11 +52,11 @@ def test_discovery_advertises_configured_signing_algorithms() -> None:
     settings = Settings(
         issuer=_ISSUER,
         base_url=_BASE_URL,
-        jwks_algorithms=("RS256", "ES256", "EdDSA"),
+        jwks_algorithms=("RS256", "ES256", "ES512"),
     )
     with TestClient(create_app(settings)) as client:
         response = client.get("/.well-known/openid-configuration")
 
     assert response.status_code == 200
     metadata = response.json()
-    assert metadata["id_token_signing_alg_values_supported"] == ["RS256", "ES256", "EdDSA"]
+    assert metadata["id_token_signing_alg_values_supported"] == ["RS256", "ES256", "ES512"]

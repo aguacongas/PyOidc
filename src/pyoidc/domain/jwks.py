@@ -14,11 +14,10 @@ class KeyType(str, Enum):
 
     RSA = "RSA"
     EC = "EC"
-    OKP = "OKP"
 
 
 class JWTAlgorithm(str, Enum):
-    """Algorithmes de signature supportés (JWA RFC 7518, RFC 8037)."""
+    """Algorithmes de signature supportés (JWA RFC 7518)."""
 
     RS256 = "RS256"
     RS384 = "RS384"
@@ -29,7 +28,6 @@ class JWTAlgorithm(str, Enum):
     ES256 = "ES256"
     ES384 = "ES384"
     ES512 = "ES512"
-    EDDSA = "EdDSA"
 
     @property
     def key_type(self) -> KeyType:
@@ -43,9 +41,7 @@ class JWTAlgorithm(str, Enum):
             JWTAlgorithm.PS512,
         ):
             return KeyType.RSA
-        if self in (JWTAlgorithm.ES256, JWTAlgorithm.ES384, JWTAlgorithm.ES512):
-            return KeyType.EC
-        return KeyType.OKP
+        return KeyType.EC
 
     @property
     def curve(self) -> str:
@@ -54,7 +50,6 @@ class JWTAlgorithm(str, Enum):
             JWTAlgorithm.ES256: "P-256",
             JWTAlgorithm.ES384: "P-384",
             JWTAlgorithm.ES512: "P-521",
-            JWTAlgorithm.EDDSA: "Ed25519",
         }.get(self, "")
 
 

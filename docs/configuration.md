@@ -13,7 +13,7 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 | `PYOIDC_HOST` | `127.0.0.1` | Interface réseau sur laquelle écoute le serveur Uvicorn. |
 | `PYOIDC_PORT` | `8000` | Port d'écoute. |
 | `PYOIDC_JWKS_KEY_SIZE` | `4096` | Taille des clés RSA générées (bits) pour la signature des jetons. |
-| `PYOIDC_JWKS_ALGORITHMS` | `RS256` | Liste (séparée par des virgules) des algorithmes de signature fournis : chacun dispose de ses propres clés publiées dans le JWKS. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, `EdDSA`. |
+| `PYOIDC_JWKS_ALGORITHMS` | `RS256` | Liste (séparée par des virgules) des algorithmes de signature fournis : chacun dispose de ses propres clés publiées dans le JWKS. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`. |
 | `PYOIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
 | `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé en mémoire. |
 
@@ -29,9 +29,9 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 
 - Au démarrage, une clé est générée **par algorithme configuré** et exposée sur
   `/.well-known/jwks.json` (format JWK, champs `kty`, `kid`, `use`, `alg`, plus `n`/`e`
-  pour RSA, `crv`/`x`/`y` pour EC et OKP).
+  pour RSA, `crv`/`x`/`y` pour EC).
 - `PYOIDC_JWKS_ALGORITHMS` permet de choisir les algorithmes fournis : serveur avec
-  plusieurs familles en parallèle (RSA + EC + OKP/EdDSA), chacune avec ses clés et son
+  plusieurs familles en parallèle (RSA + EC), chacune avec ses clés et son
   cycle de rotation propres.
 - À chaque lecture du JWKS, le serveur applique la rotation :
   1. les clés plus vieilles que `rotation_days` sont retirées du JWKS ;
@@ -62,7 +62,7 @@ PYOIDC_ISSUER=https://id.example.com uv run uvicorn pyoidc.server:app --host 127
 PYOIDC_ISSUER=https://id.example.com
 PYOIDC_HOST=127.0.0.1
 PYOIDC_PORT=8000
-PYOIDC_JWKS_ALGORITHMS=RS256,ES256,ES384,EdDSA
+PYOIDC_JWKS_ALGORITHMS=RS256,ES256,ES384
 ```
 
 ## Paramètres à venir (par feature)

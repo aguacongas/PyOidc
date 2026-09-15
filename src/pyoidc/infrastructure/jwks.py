@@ -6,7 +6,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Protocol, cast
 
-from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     NoEncryption,
@@ -24,8 +24,6 @@ _RSA_ALGORITHMS = (
     JWTAlgorithm.PS384,
     JWTAlgorithm.PS512,
 )
-
-_EC_ALGORITHMS = (JWTAlgorithm.ES256, JWTAlgorithm.ES384, JWTAlgorithm.ES512)
 
 _EC_CURVES: dict[JWTAlgorithm, ec.EllipticCurve] = {
     JWTAlgorithm.ES256: ec.SECP256R1(),
@@ -60,7 +58,7 @@ class _PEMPublicKey(Protocol):
 class RSAKeyManager:
     """Génère et stocke des paires de clés de signature en mémoire.
 
-    Supporte les familles RSA (RS*, PS*), EC (ES*) et OKP (Ed25519) :
+    Supporte les familles RSA (RS*, PS*) et EC (ES*) :
     le type de clé générée dépend de l'algorithme demandé.
     """
 
@@ -110,10 +108,8 @@ def _generate_key_pair(key_size: int, algorithm: JWTAlgorithm) -> KeyPair:
     """Génère une paire de clés PEM adaptée à l'algorithme demandé."""
     if algorithm in _RSA_ALGORITHMS:
         pk: _PEMPrivateKey = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
-    elif algorithm in _EC_ALGORITHMS:
-        pk = cast(_PEMPrivateKey, ec.generate_private_key(_EC_CURVES[algorithm]))
     else:
-        pk = cast(_PEMPrivateKey, ed25519.Ed25519PrivateKey.generate())
+        pk = cast(_PEMPrivateKey, ec.generate_private_key(_EC_CURVES[algorithm]))
 
     private_pem = pk.private_bytes(
         cast(Encoding, Encoding.PEM),

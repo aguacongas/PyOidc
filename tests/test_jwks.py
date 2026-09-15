@@ -36,16 +36,8 @@ def test_key_manager_generates_ec_pair() -> None:
     assert key_pair.public_key_pem.startswith("-----BEGIN PUBLIC KEY-----")
 
 
-def test_key_manager_generates_okp_pair() -> None:
-    manager = RSAKeyManager()
-    key_pair = manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.EDDSA)
-
-    assert key_pair.algorithm is JWTAlgorithm.EDDSA
-    assert key_pair.public_key_pem.startswith("-----BEGIN PUBLIC KEY-----")
-
-
 def test_jwks_use_case_initialise_creates_one_active_key_per_algorithm() -> None:
-    algorithms = (JWTAlgorithm.RS256, JWTAlgorithm.ES256, JWTAlgorithm.EDDSA)
+    algorithms = (JWTAlgorithm.RS256, JWTAlgorithm.ES256, JWTAlgorithm.ES512)
     usecase = JWKSetUseCase(
         JWKSetConfig(key_size=_KEY_SIZE, algorithms=algorithms), RSAKeyManager()
     )
@@ -62,16 +54,16 @@ def test_jwks_endpoint_returns_keys_for_each_configured_algorithm() -> None:
         issuer=_ISSUER,
         base_url=_ISSUER,
         jwks_key_size=_KEY_SIZE,
-        jwks_algorithms=("RS256", "ES256", "EdDSA"),
+        jwks_algorithms=("RS256", "ES256"),
     )
     with TestClient(create_app(settings)) as client:
         response = client.get("/.well-known/jwks.json")
 
     assert response.status_code == 200
     keys = response.json()["keys"]
-    assert len(keys) == 3
+    assert len(keys) == 2
     by_alg = {key["alg"]: key for key in keys}
-    assert set(by_alg) == {"RS256", "ES256", "EdDSA"}
+    assert set(by_alg) == {"RS256", "ES256"}
     assert by_alg["RS256"]["kty"] == "RSA"
     assert _is_valid_base64url(by_alg["RS256"]["n"])
     assert _is_valid_base64url(by_alg["RS256"]["e"])
@@ -79,9 +71,6 @@ def test_jwks_endpoint_returns_keys_for_each_configured_algorithm() -> None:
     assert by_alg["ES256"]["crv"] == "P-256"
     assert _is_valid_base64url(by_alg["ES256"]["x"])
     assert _is_valid_base64url(by_alg["ES256"]["y"])
-    assert by_alg["EdDSA"]["kty"] == "OKP"
-    assert by_alg["EdDSA"]["crv"] == "Ed25519"
-    assert _is_valid_base64url(by_alg["EdDSA"]["x"])
 
 
 def test_jwks_endpoint_keys_are_verifiable_with_pyjwt() -> None:
@@ -136,16 +125,16 @@ def test_rotation_removes_expired_keys_and_regenerates_when_all_stale() -> None:
 
 def test_rotation_regenerates_a_missing_algorithm_alongside_active_others() -> None:
     manager = RSAKeyManager()
-    manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.EDDSA)
+    manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256)
     _plant_keys(manager, JWTAlgorithm.ES256, 100)
     usecase = JWKSetUseCase(
-        JWKSetConfig(key_size=_KEY_SIZE, algorithms=(JWTAlgorithm.ES256, JWTAlgorithm.EDDSA)),
+        JWKSetConfig(key_size=_KEY_SIZE, algorithms=(JWTAlgorithm.ES256, JWTAlgorithm.RS256)),
         manager,
     )
 
     active = usecase.get_active_keys()
 
-    assert {key.algorithm for key in active} == {JWTAlgorithm.EDDSA, JWTAlgorithm.ES256}
+    assert {key.algorithm for key in active} == {JWTAlgorithm.ES256, JWTAlgorithm.RS256}
 
 
 def test_settings_reject_unsupported_algorithm() -> None:

@@ -3,24 +3,19 @@
 from __future__ import annotations
 
 import base64
-from typing import cast
 
-from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
-from cryptography.hazmat.primitives.serialization import (
-    Encoding,
-    PublicFormat,
-    load_pem_public_key,
-)
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from pydantic import BaseModel
 
-from pyoidc.domain.jwks import JWTAlgorithm, KeyPair
+from pyoidc.domain.jwks import KeyPair
 
 
 class JWKKeyResponse(BaseModel):
     """Clé publique au format JSON Web Key (RFC 7517 §4).
 
     Les champs présents dépendent de la famille de clé : ``n``/``e`` pour
-    RSA, ``crv``/``x``/``y`` pour EC et OKP.
+    RSA, ``crv``/``x``/``y`` pour EC.
     """
 
     kty: str
@@ -52,18 +47,9 @@ class JWKKeyResponse(BaseModel):
         elif isinstance(public_key, ec.EllipticCurvePublicKey):
             number = public_key.public_numbers()
             common.update(
-                crv=_crv_for(key_pair.algorithm),
+                crv=key_pair.algorithm.curve,
                 x=_int_to_base64url(number.x),
                 y=_int_to_base64url(number.y),
-            )
-        elif isinstance(public_key, ed25519.Ed25519PublicKey):
-            raw = public_key.public_bytes(
-                cast(Encoding, Encoding.Raw),
-                cast(PublicFormat, PublicFormat.Raw),
-            )
-            common.update(
-                crv=_crv_for(key_pair.algorithm),
-                x=_to_base64url(raw),
             )
         return cls(**common)
 
@@ -72,11 +58,6 @@ class JWKSetResponse(BaseModel):
     """Jeu de clés JWK (RFC 7517 §5)."""
 
     keys: list[JWKKeyResponse]
-
-
-def _crv_for(algorithm: JWTAlgorithm) -> str:
-    """Retourne la courbe JWK associée à un algorithme EC/OKP."""
-    return algorithm.curve
 
 
 def _int_to_base64url(value: int) -> str:

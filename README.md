@@ -81,7 +81,7 @@ tests/             pytest unit + intégration (TestClient httpx)
 
 1. **Bootstrap** — FastAPI + models Pydantic + endpoints `/token` et `/authorize` squelettes
 2. ✅ **JWKS + Discovery** — génération de clés de signature multi-algorithmes
-   (RSA `RS*`/`PS*`, EC `ES*`, EdDSA — liste configurable via `PYOIDC_JWKS_ALGORITHMS`),
+   (RSA `RS*`/`PS*`, EC `ES*` — liste configurable via `PYOIDC_JWKS_ALGORITHMS`),
    rotation par algorithme, `/.well-known/*`
 3. **Authorization Code + PKCE** (grant principal, RFC 6749 + 7636)
 4. **ID Token + UserInfo** — émission et validation JWT via PyJWT
