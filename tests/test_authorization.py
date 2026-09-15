@@ -125,6 +125,48 @@ def test_authorize_rejects_missing_openid_scope() -> None:
     assert _redirect_query(response.headers["location"])["error"] == ["invalid_scope"]
 
 
+def test_authorize_rejects_invalid_code_challenge_method() -> None:
+    with TestClient(_app()) as client:
+        response = client.get(
+            "/authorize",
+            params={
+                "response_type": "code",
+                "client_id": "web-app",
+                "redirect_uri": "https://app.example/callback",
+                "scope": "openid",
+                "state": "st-1",
+                "code_challenge": _s256_challenge("verifier-verifier"),
+                "code_challenge_method": "unsupported",
+            },
+            follow_redirects=False,
+        )
+
+    assert response.status_code == 302
+    query = _redirect_query(response.headers["location"])
+    assert query["error"] == ["invalid_request"]
+    assert query["state"] == ["st-1"]
+
+
+def test_authorize_error_redirect_includes_state() -> None:
+    with TestClient(_app()) as client:
+        response = client.get(
+            "/authorize",
+            params={
+                "response_type": "code",
+                "client_id": "unknown",
+                "redirect_uri": "https://app.example/callback",
+                "scope": "openid",
+                "state": "some-state",
+            },
+            follow_redirects=False,
+        )
+
+    assert response.status_code == 302
+    query = _redirect_query(response.headers["location"])
+    assert query["error"] == ["invalid_client"]
+    assert query["state"] == ["some-state"]
+
+
 def test_authorize_rejects_unsupported_response_type() -> None:
     with TestClient(_app()) as client:
         response = client.get(

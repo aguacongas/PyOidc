@@ -11,10 +11,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
-from pyoidc.domain.jwks import JWTAlgorithm
+from pyoidc.domain.jwks import JWTAlgorithm, KeyPair
 from pyoidc.infrastructure.jwks import DefaultKeyManager
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
 from pyoidc.infrastructure.settings import Settings
+from pyoidc.interfaces.schemas.jwks import JWKKeyResponse
 from pyoidc.server import create_app
 
 _ISSUER = "https://id.example"
@@ -172,6 +173,65 @@ def test_settings_reject_unsupported_algorithm() -> None:
 def test_settings_reject_unsupported_key_store_type() -> None:
     with pytest.raises(ValueError):
         Settings(key_store_type="cassandra")
+
+
+def test_settings_client_seed_with_scalar_redirect_uris() -> None:
+    settings = Settings(
+        clients_seed=({"client_id": "x", "redirect_uris": "https://x.example/cb"},)
+    )
+
+    client = settings.seed_clients[0]
+    assert client.redirect_uris == frozenset()
+
+
+def test_settings_client_seed_rejects_unsupported_client_type() -> None:
+    settings = Settings(clients_seed=({"client_id": "x", "client_type": "service"},))
+
+    with pytest.raises(ValueError, match="non supporté"):
+        _ = settings.seed_clients
+
+
+def test_settings_client_seed_reads_json_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "PYOIDC_CLIENTS_SEED",
+        '[{"client_id": "env-app", "redirect_uris": ["https://e.example/cb"]}]',
+    )
+    settings = Settings(_env_file=None)
+
+    assert [client.client_id for client in settings.seed_clients] == ["env-app"]
+
+
+def test_settings_client_seed_rejects_non_list_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYOIDC_CLIENTS_SEED", '{"client_id": "env-app"}')
+    with pytest.raises(ValueError, match="doit être une liste JSON"):
+        Settings(_env_file=None)
+
+
+def test_jwk_response_handles_unknown_key_family() -> None:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import (
+        Encoding,
+        PublicFormat,
+    )
+
+    private_key = Ed25519PrivateKey.generate()
+    pub_pem = (
+        private_key.public_key()
+        .public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+        .decode("ascii")
+    )
+    key_pair = KeyPair(algorithm=JWTAlgorithm.RS256, public_key_pem=pub_pem)
+
+    jwk = JWKKeyResponse.from_key_pair(key_pair)
+
+    assert jwk.kty == "RSA"
+    assert jwk.n is None
+    assert jwk.e is None
+    assert jwk.crv is None
+    assert jwk.x is None
+    assert jwk.y is None
 
 
 def _is_valid_base64url(value: str) -> bool:
