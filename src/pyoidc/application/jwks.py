@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from pyoidc.domain.jwks import JWTAlgorithm, KeyManager, KeyPair
+from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm, KeyManager, KeyPair
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,7 +12,7 @@ class JWKSetConfig:
     """Paramètres de gestion des clés JWKS."""
 
     key_size: int = 4096
-    algorithms: tuple[JWTAlgorithm, ...] = (JWTAlgorithm.RS256,)
+    algorithms: tuple[JWTAlgorithm, ...] = ALL_SIGNING_ALGORITHMS
     rotation_days: int = 90
     grace_period_days: int = 7
 

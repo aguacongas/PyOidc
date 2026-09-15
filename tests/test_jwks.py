@@ -49,6 +49,12 @@ def test_jwks_use_case_initialise_creates_one_active_key_per_algorithm() -> None
     assert all(key.is_active for key in keys)
 
 
+def test_settings_default_to_all_supported_algorithms() -> None:
+    settings = Settings()
+
+    assert settings.jwks_algorithms == tuple(algorithm.value for algorithm in JWTAlgorithm)
+
+
 def test_jwks_endpoint_returns_keys_for_each_configured_algorithm() -> None:
     settings = Settings(
         issuer=_ISSUER,

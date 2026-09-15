@@ -5,7 +5,7 @@ from functools import cached_property
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from pyoidc.domain.jwks import JWTAlgorithm
+from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm
 
 
 class Settings(BaseSettings):
@@ -20,7 +20,9 @@ class Settings(BaseSettings):
 
     # JWKS (RFC 7517)
     jwks_key_size: int = 4096
-    jwks_algorithms: tuple[str, ...] = ("RS256",)
+    jwks_algorithms: tuple[str, ...] = tuple(
+        algorithm.value for algorithm in ALL_SIGNING_ALGORITHMS
+    )
     jwks_rotation_days: int = 90
     jwks_grace_period_days: int = 7
 

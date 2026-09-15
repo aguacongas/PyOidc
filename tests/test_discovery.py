@@ -8,6 +8,7 @@ from pyoidc.server import create_app
 
 _ISSUER = "https://id.example"
 _BASE_URL = "https://id.example"
+_ALL_ALGOS = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
 
 
 def test_discovery_usecase_builds_document_from_base_url() -> None:
@@ -22,6 +23,7 @@ def test_discovery_usecase_builds_document_from_base_url() -> None:
     assert document["introspection_endpoint"] == f"{_BASE_URL}/introspect"
     assert document["revocation_endpoint"] == f"{_BASE_URL}/revoke"
     assert document["end_session_endpoint"] == f"{_BASE_URL}/end_session"
+    assert document["id_token_signing_alg_values_supported"] == _ALL_ALGOS
 
 
 def test_discovery_usecase_falls_back_to_issuer_as_base_url() -> None:
@@ -45,7 +47,7 @@ def test_discovery_endpoint_returns_oidc_metadata() -> None:
     assert metadata["jwks_uri"] == f"{_BASE_URL}/.well-known/jwks.json"
     assert metadata["response_types_supported"] == ["code"]
     assert metadata["subject_types_supported"] == ["public"]
-    assert metadata["id_token_signing_alg_values_supported"] == ["RS256"]
+    assert metadata["id_token_signing_alg_values_supported"] == _ALL_ALGOS
 
 
 def test_discovery_advertises_configured_signing_algorithms() -> None:

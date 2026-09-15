@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS
+
 
 @dataclass(frozen=True, slots=True)
 class DiscoveryConfig:
@@ -9,7 +11,9 @@ class DiscoveryConfig:
 
     issuer: str
     base_url: str = ""
-    signing_algorithms: tuple[str, ...] = ("RS256",)
+    signing_algorithms: tuple[str, ...] = tuple(
+        algorithm.value for algorithm in ALL_SIGNING_ALGORITHMS
+    )
 
 
 class DiscoveryUseCase:

@@ -53,6 +53,9 @@ class JWTAlgorithm(str, Enum):
         }.get(self, "")
 
 
+ALL_SIGNING_ALGORITHMS: tuple[JWTAlgorithm, ...] = tuple(JWTAlgorithm)
+
+
 @dataclass(frozen=True, slots=True)
 class KeyPair:
     """Paire de clés pour la signature JWT, quel que soit l'algorithme.

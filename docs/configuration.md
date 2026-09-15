@@ -13,7 +13,7 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 | `PYOIDC_HOST` | `127.0.0.1` | Interface réseau sur laquelle écoute le serveur Uvicorn. |
 | `PYOIDC_PORT` | `8000` | Port d'écoute. |
 | `PYOIDC_JWKS_KEY_SIZE` | `4096` | Taille des clés RSA générées (bits) pour la signature des jetons. |
-| `PYOIDC_JWKS_ALGORITHMS` | `RS256` | Liste (séparée par des virgules) des algorithmes de signature fournis : chacun dispose de ses propres clés publiées dans le JWKS. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`. |
+| `PYOIDC_JWKS_ALGORITHMS` | *(tous)* | Liste (séparée par des virgules) des algorithmes de signature fournis : chacun dispose de ses propres clés publiées dans le JWKS. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512` ; par défaut, **tous** sont fournis. |
 | `PYOIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
 | `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé en mémoire. |
 
