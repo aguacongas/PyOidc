@@ -1,0 +1,300 @@
+"""Client de démonstration : Authorization Code + PKCE (RFC 6749, RFC 7636).
+
+Implémente une *relying party* qui se connecte à un serveur PyOidc :
+
+1. redirection du navigateur vers ``/authorize`` avec un challenge PKCE S256,
+2. réception du ``code`` d'autorisation sur ``/callback``,
+3. échange du code au ``/token`` avec le ``code_verifier``,
+4. vérification de l'``id_token`` (signature JWKS, ``aud``, ``nonce``) et
+   affichage des claims.
+
+Lancement (depuis la racine du dépôt) :
+
+    uv run python samples/pkce-client/app.py
+
+Le client (http://127.0.0.1:5173) est pré-enregistré par défaut sur le
+serveur PyOidc ; rien d'autre à configurer pour un démarrage local.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import html
+import os
+import secrets
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Annotated, Any
+from urllib.parse import urlencode
+
+import httpx
+import jwt as pyjwt
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import HTMLResponse, RedirectResponse
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    TomlConfigSettingsSource,
+)
+
+_HTTP_TIMEOUT = 10
+
+_HTML_PAGE = """<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>PyOidc — client démo (Authorization Code + PKCE)</title>
+  <style>
+    body {{ font-family: sans-serif; margin: 2rem; max-width: 42rem; }}
+    code {{ background: #f4f4f4; padding: 0.15rem 0.35rem; border-radius: 4px; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    td, th {{ border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }}
+    a.button {{ display: inline-block; background: #116d8e; color: #fff;
+                padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; }}
+  </style>
+</head>
+<body>
+{body}
+</body>
+</html>
+"""
+
+_SCOPE = "openid profile email"
+
+
+class Settings(BaseSettings):
+    """Réglages du client de démonstration (env `OIDC_*`, config.toml du sample).
+
+    Hiérarchie : arguments d'init > environnement `OIDC_*` > `config.toml`
+    du sample > défauts du code. Le fichier de config est surchargeable
+    via `OIDC_SETTINGS_FILE`.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="OIDC_", extra="ignore")
+
+    issuer: str = "http://127.0.0.1:8000"
+    client_id: str = "sample-pkce-client"
+    redirect_uri: str = "http://127.0.0.1:5173/callback"
+    host: str = "127.0.0.1"
+    port: int = 5173
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Charge la table `[settings]` du `config.toml` situé à côté du script."""
+        default_path = Path(__file__).resolve().parent / "config.toml"
+        toml_path = Path(os.environ.get("OIDC_SETTINGS_FILE", str(default_path)))
+        toml_settings = TomlConfigSettingsSource(
+            settings_cls, toml_file=toml_path, toml_table_header=("settings",)
+        )
+        return (init_settings, env_settings, toml_settings, dotenv_settings, file_secret_settings)
+
+
+@dataclass(frozen=True, slots=True)
+class PendingAuth:
+    """Mémorise le ``code_verifier`` et le ``nonce`` d'un login en cours."""
+
+    verifier: str
+    nonce: str
+
+
+def _base64url_bytes(size: int) -> str:
+    """Produit une chaîne base64url sans padding à partir de ``size`` octets aléatoires."""
+    return base64.urlsafe_b64encode(secrets.token_bytes(size)).rstrip(b"=").decode("ascii")
+
+
+def _s256_challenge(verifier: str) -> str:
+    """Calcule le challenge PKCE S256 (RFC 7636 §4.2) d'un ``code_verifier``."""
+    digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+
+async def _discovery(client: httpx.AsyncClient, settings: Settings) -> dict[str, Any]:
+    """Récupère le document de discovery du serveur (endpoints et algorithmes)."""
+    url = f"{settings.issuer.rstrip('/')}/.well-known/openid-configuration"
+    response = await client.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def _page(body: str) -> str:
+    """Enveloppe un contenu HTML dans le gabarit de la démo."""
+    return _HTML_PAGE.format(body=body)
+
+
+def _index_html(settings: Settings) -> str:
+    """Page d'accueil : invite à se connecter via le flow Authorization Code."""
+    body = f"""
+<h1>PyOidc — client démo</h1>
+<p>Se connecter avec le flow <strong>Authorization Code + PKCE</strong>
+contre le serveur <code>{html.escape(settings.issuer)}</code>.</p>
+<p>Client : <code>{html.escape(settings.client_id)}</code></p>
+<p><a class="button" href="/login">Se connecter avec PyOidc</a></p>
+"""
+    return _page(body)
+
+
+def _authorization_url(
+    endpoints: dict[str, Any], settings: Settings, state: str, nonce: str, challenge: str
+) -> str:
+    """Construit l'URL de ``/authorize`` avec les paramètres du flow."""
+    params = urlencode(
+        {
+            "response_type": "code",
+            "client_id": settings.client_id,
+            "redirect_uri": settings.redirect_uri,
+            "scope": _SCOPE,
+            "state": state,
+            "nonce": nonce,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+        }
+    )
+    return f"{endpoints['authorization_endpoint']}?{params}"
+
+
+async def _exchange_code(
+    client: httpx.AsyncClient,
+    endpoints: dict[str, Any],
+    settings: Settings,
+    code: str,
+    verifier: str,
+) -> dict[str, Any]:
+    """Échange le code d'autorisation contre un token au endpoint ``/token``."""
+    response = await client.post(
+        endpoints["token_endpoint"],
+        data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": settings.redirect_uri,
+            "client_id": settings.client_id,
+            "code_verifier": verifier,
+        },
+    )
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Échec de l'échange du code : {response.text}",
+        )
+    return response.json()
+
+
+def _verify_id_token(
+    id_token: str,
+    jwks_uri: str,
+    endpoints: dict[str, Any],
+    settings: Settings,
+    nonce: str,
+) -> dict[str, Any]:
+    """Vérifie la signature (JWKS, résolution par `kid`) et les claims de l'`id_token`.
+
+    Contrôles : RFC 7519 et OIDC Core §3.1.3.7 (`iss`, `aud`, `nonce`, `exp`).
+    """
+    algorithms = endpoints.get("id_token_signing_alg_values_supported") or ["RS256"]
+    signing_key = pyjwt.PyJWKClient(jwks_uri).get_signing_key_from_jwt(id_token).key
+    claims = pyjwt.decode(
+        id_token,
+        key=signing_key,
+        algorithms=algorithms,
+        audience=settings.client_id,
+        options={"require": ["iss", "exp", "iat", "nonce"]},
+    )
+    if claims.get("iss") != endpoints["issuer"]:
+        raise HTTPException(status_code=502, detail="Issuer inattendu dans l'id_token")
+    if claims.get("nonce") != nonce:
+        raise HTTPException(status_code=502, detail="Nonce inattendu dans l'id_token")
+    return claims
+
+
+def _tokens_html(claims: dict[str, Any], access_token: str, expires_in: object) -> str:
+    """Affiche les claims validés de l'``id_token`` et l'access token émis."""
+    rows = "".join(
+        f"<tr><td><code>{html.escape(str(key))}</code></td>"
+        f"<td><code>{html.escape(str(value))}</code></td></tr>"
+        for key, value in sorted(claims.items())
+    )
+    body = f"""
+<h1>Connecté</h1>
+<p><code>id_token</code> vérifié (signature JWKS, <code>aud</code>, <code>nonce</code>).</p>
+<table>
+  <tr><th>Claim</th><th>Valeur</th></tr>
+  {rows}
+</table>
+<p><code>access_token</code> (expire dans {html.escape(str(expires_in))} s)&nbsp;:</p>
+<pre>{html.escape(access_token)}</pre>
+<p><a href="/">Retour à l'accueil</a></p>
+"""
+    return _page(body)
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Assemble l'application FastAPI du client de démonstration."""
+    app_settings = settings or Settings()
+    pending: dict[str, PendingAuth] = {}
+
+    app = FastAPI(
+        title="PyOidc — client démo (Authorization Code + PKCE)",
+        description="Relying party de démonstration du flow authorization code + PKCE.",
+    )
+
+    @app.get("/", response_class=HTMLResponse)
+    async def index() -> str:
+        """Page d'accueil du client de démonstration."""
+        return _index_html(app_settings)
+
+    @app.get("/login")
+    async def login() -> RedirectResponse:
+        """Initialise un login PKCE et redirige le navigateur vers ``/authorize``."""
+        verifier = _base64url_bytes(32)
+        challenge = _s256_challenge(verifier)
+        state = _base64url_bytes(32)
+        nonce = _base64url_bytes(16)
+        pending[state] = PendingAuth(verifier=verifier, nonce=nonce)
+
+        async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
+            endpoints = await _discovery(client, app_settings)
+        url = _authorization_url(endpoints, app_settings, state, nonce, challenge)
+        return RedirectResponse(url=url, status_code=302)
+
+    @app.get("/callback")
+    async def callback(
+        code: Annotated[str, Query()], state: Annotated[str, Query()]
+    ) -> HTMLResponse:
+        """Échange le code reçu, vérifie l'``id_token`` et affiche le résultat."""
+        auth = pending.pop(state, None)
+        if auth is None:
+            raise HTTPException(status_code=400, detail="État inconnu ou expiré")
+
+        async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
+            endpoints = await _discovery(client, app_settings)
+            token_payload = await _exchange_code(
+                client, endpoints, app_settings, code, auth.verifier
+            )
+
+        claims = _verify_id_token(
+            token_payload["id_token"], endpoints["jwks_uri"], endpoints, app_settings, auth.nonce
+        )
+        return HTMLResponse(
+            _tokens_html(claims, token_payload["access_token"], token_payload.get("expires_in"))
+        )
+
+    return app
+
+
+def main() -> None:
+    """Lance le client de démonstration avec Uvicorn (host/port de ``OIDC_*``)."""
+    settings = Settings()
+    uvicorn.run(create_app(settings), host=settings.host, port=settings.port)
+
+
+if __name__ == "__main__":
+    main()

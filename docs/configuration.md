@@ -1,8 +1,10 @@
 # Configuration du serveur
 
-La configuration se fait par **variables d'environnement** (préfixe `PYOIDC_`) ou par
-fichier **`.env`** placé à la racine du projet (chargé automatiquement au démarrage).
-Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
+La configuration se fait par **variables d'environnement** (préfixe `PYOIDC_`), par
+fichier **`.env`** placé à la racine du projet (chargé automatiquement au démarrage),
+ou par le fichier **`config.toml`** du dépôt qui fournit des **défauts de démonstration**
+(l'environnement reste prioritaire sur le fichier).
+Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 
 ## Paramètres actuels
 
@@ -20,7 +22,8 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 | `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé. |
 | `PYOIDC_AUTHORIZATION_CODE_TTL_SECONDS` | `600` | Durée de vie du code d'autorisation (secondes). |
 | `PYOIDC_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Durée de vie de l'access token émis (secondes). |
-| `PYOIDC_CLIENTS` | `()` | Liste JSON de clients seed au démarrage (format `[{"client_id":"...","client_secret":"...","redirect_uris":["..."],"scopes":"openid","client_type":"public"}]`). |
+| `PYOIDC_SETTINGS_FILE` | `config.toml` | Chemin du fichier TOML des défauts du projet (table `[settings]`), notamment les clients seed. |
+| `PYOIDC_CLIENTS_SEED` | *(config.toml)* | Liste JSON de clients seed au démarrage (format `[{"client_id":"...","client_secret":"...","redirect_uris":["..."],"scopes":"openid","client_type":"public"}]`). Par défaut, `config.toml` fournit le client de démo `sample-pkce-client`. |
 
 ### `issuer` vs `base_url`
 
@@ -53,6 +56,32 @@ réécrit automatiquement vers le dialecte asynchrone (ex. `sqlite:///keys.db` �
 - La rotation est déclenchée à chaque lecture du JWKS : les clés plus vieilles que
   `rotation_days` sont retirées, les clés hors `grace_period_days` sont supprimées,
   et une nouvelle clé est générée si nécessaire.
+
+## Fichier de configuration par défaut (`config.toml`)
+
+Le dépôt embarque un `config.toml` (racine du projet) qui déclare les **défauts
+de démonstration**. Sa table `[settings]` est chargée automatiquement sous les
+défauts, avec la hiérarchie de priorité suivante :
+
+```
+arguments d'init > variables d'environnement (PYOIDC_*) > config.toml > défauts du code
+```
+
+Le fichier ne contient actuellement que le **client de démo du flow
+Authorization Code + PKCE** (`sample-pkce-client`, client *public*, callback
+`http://127.0.0.1:5173/callback`, scopes `openid profile email`) utilisé par
+[`samples/pkce-client`](../samples/pkce-client/README.md).
+
+Pour personnaliser ou ajouter des clients sans toucher au code, deux options :
+
+- surcharger le chemin via `PYOIDC_SETTINGS_FILE` (ex. copier
+  `config.toml` vers `config.local.toml`, l'éditer, puis
+  `PYOIDC_SETTINGS_FILE=config.local.toml uv run python -m pyoidc`) ;
+- passer la liste complète par l'environnement :
+  `PYOIDC_CLIENTS_SEED='[{"client_id": "my-app", ...}]'` (remplace `config.toml`).
+
+> Note : `PYOIDC_CLIENTS_SEED` **remplace** la liste par défaut, il ne la
+> fusionne pas. Déclarez la liste complète des clients souhaités.
 
 ## Exemples
 

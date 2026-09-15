@@ -91,6 +91,7 @@ extérieur.
   puis SQL/Mongo), Uvicorn, TLS/proxy.
 
 Concrètement :
+
 - `src/pyoidc/` — code de l'application (FastAPI).
 - `tests/` — tests unitaires et d'intégration (TestClient httpx).
 - **Composition root** unique (`server.py`) : c'est le seul endroit qui assemble

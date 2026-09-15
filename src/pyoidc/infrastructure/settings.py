@@ -1,16 +1,26 @@
-"""Configuration de l'infrastructure (variable d'environnement, .env)."""
+"""Configuration de l'infrastructure (variable d'environnement, .env, config.toml)."""
 
+import os
 from functools import cached_property
 from hashlib import sha256
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    NoDecode,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    TomlConfigSettingsSource,
+)
 
 from pyoidc.domain.authorization import Client, ClientType, Scope
 from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm
 
 _KEY_STORE_TYPES = ("memory", "sql")
+
+_SETTINGS_FILE_ENV = "PYOIDC_SETTINGS_FILE"
 
 
 def _hash_client_secret(secret: str) -> str:
@@ -50,6 +60,29 @@ class Settings(BaseSettings):
     """Réglages du serveur, surchargeables via l'environnement (préfixe `PYOIDC_`)."""
 
     model_config = SettingsConfigDict(env_prefix="PYOIDC_", env_file=".env", extra="ignore")
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Surcharge la hiérarchie de sources avec le fichier `config.toml` du dépôt.
+
+        La table `[settings]` du fichier fournit les valeurs par défaut du projet
+        ; l'environnement (`PYOIDC_*`) reste prioritaire. Le chemin est
+        surchargeable via `PYOIDC_SETTINGS_FILE`.
+        """
+        toml_path = Path(os.environ.get(_SETTINGS_FILE_ENV, "config.toml"))
+        toml_settings = TomlConfigSettingsSource(
+            settings_cls,
+            toml_file=toml_path,
+            toml_table_header=("settings",),
+        )
+        return (init_settings, env_settings, toml_settings, dotenv_settings, file_secret_settings)
 
     issuer: str = "http://localhost:8000"
     base_url: str = ""

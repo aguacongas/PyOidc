@@ -5,12 +5,14 @@ import base64
 from collections.abc import Awaitable
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import TypeVar
 
 import pytest
 from fastapi.testclient import TestClient
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
+from pyoidc.domain.authorization import ClientType
 from pyoidc.domain.jwks import JWTAlgorithm, KeyPair
 from pyoidc.infrastructure.jwks import DefaultKeyManager
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
@@ -199,6 +201,20 @@ def test_settings_client_seed_reads_json_from_environment(
     settings = Settings(_env_file=None)
 
     assert [client.client_id for client in settings.seed_clients] == ["env-app"]
+
+
+def test_settings_client_seed_reads_defaults_from_config_toml(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = Path(__file__).resolve().parents[1] / "config.toml"
+    monkeypatch.setenv("PYOIDC_SETTINGS_FILE", str(config))
+    settings = Settings(_env_file=None)
+
+    client = settings.seed_clients[0]
+    assert [c.client_id for c in settings.seed_clients] == ["sample-pkce-client"]
+    assert client.redirect_uris == frozenset({"http://127.0.0.1:5173/callback"})
+    assert client.scopes == frozenset({"openid", "profile", "email"})
+    assert client.client_type == ClientType.PUBLIC
 
 
 def test_settings_client_seed_rejects_non_list_json(monkeypatch: pytest.MonkeyPatch) -> None:
