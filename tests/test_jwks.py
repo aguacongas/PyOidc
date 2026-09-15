@@ -4,8 +4,8 @@ import base64
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from fastapi.testclient import TestClient
-from pytest import MonkeyPatch, raises
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
@@ -55,7 +55,7 @@ def test_settings_default_to_all_supported_algorithms() -> None:
     assert settings.jwks_algorithms == tuple(algorithm.value for algorithm in JWTAlgorithm)
 
 
-def test_settings_read_algorithm_list_from_environment(monkeypatch: MonkeyPatch) -> None:
+def test_settings_read_algorithm_list_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PYOIDC_JWKS_ALGORITHMS", "RS256,ES256")
     settings = Settings(_env_file=None)
 
@@ -152,7 +152,7 @@ def test_rotation_regenerates_a_missing_algorithm_alongside_active_others() -> N
 
 
 def test_settings_reject_unsupported_algorithm() -> None:
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         Settings(jwks_algorithms=("RS256", "HS256"))
 
 
