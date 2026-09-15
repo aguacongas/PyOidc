@@ -45,3 +45,18 @@ def test_discovery_endpoint_returns_oidc_metadata() -> None:
     assert metadata["jwks_uri"] == f"{_BASE_URL}/.well-known/jwks.json"
     assert metadata["response_types_supported"] == ["code"]
     assert metadata["subject_types_supported"] == ["public"]
+    assert metadata["id_token_signing_alg_values_supported"] == ["RS256"]
+
+
+def test_discovery_advertises_configured_signing_algorithms() -> None:
+    settings = Settings(
+        issuer=_ISSUER,
+        base_url=_BASE_URL,
+        jwks_algorithms=("RS256", "ES256", "EdDSA"),
+    )
+    with TestClient(create_app(settings)) as client:
+        response = client.get("/.well-known/openid-configuration")
+
+    assert response.status_code == 200
+    metadata = response.json()
+    assert metadata["id_token_signing_alg_values_supported"] == ["RS256", "ES256", "EdDSA"]

@@ -9,6 +9,7 @@ class DiscoveryConfig:
 
     issuer: str
     base_url: str = ""
+    signing_algorithms: tuple[str, ...] = ("RS256",)
 
 
 class DiscoveryUseCase:
@@ -30,6 +31,7 @@ class DiscoveryUseCase:
             "introspection_endpoint": f"{base}/introspect",
             "revocation_endpoint": f"{base}/revoke",
             "end_session_endpoint": f"{base}/end_session",
+            "id_token_signing_alg_values_supported": list(self._config.signing_algorithms),
         }
 
     def _resolve_base_url(self) -> str:

@@ -80,7 +80,9 @@ tests/             pytest unit + intégration (TestClient httpx)
 ## Plan d'implémentation
 
 1. **Bootstrap** — FastAPI + models Pydantic + endpoints `/token` et `/authorize` squelettes
-2. ✅ **JWKS + Discovery** — génération des clés RSA (rotation), `/.well-known/*`
+2. ✅ **JWKS + Discovery** — génération de clés de signature multi-algorithmes
+   (RSA `RS*`/`PS*`, EC `ES*`, EdDSA — liste configurable via `PYOIDC_JWKS_ALGORITHMS`),
+   rotation par algorithme, `/.well-known/*`
 3. **Authorization Code + PKCE** (grant principal, RFC 6749 + 7636)
 4. **ID Token + UserInfo** — émission et validation JWT via PyJWT
 5. **Refresh tokens** — rotation, expiration, rejeu
@@ -101,7 +103,7 @@ uv run python scripts/check.py lint format type test  # ou une sous-sélection
 ```
 
 Config via variables d'environnement `PYOIDC_*` (`PYOIDC_ISSUER`, `PYOIDC_HOST`,
-`PYOIDC_PORT`, ...).
+`PYOIDC_PORT`, `PYOIDC_JWKS_ALGORITHMS`, ...).
 
 ## Qualité et SonarCloud
 
