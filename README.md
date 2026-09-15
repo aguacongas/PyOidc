@@ -1,4 +1,4 @@
-# PyOidc — Serveur OpenID Connect
+# ThePurOidc — Serveur OpenID Connect
 
 Serveur **OpenID Connect** (OIDC) / identity Provider, dans l'esprit de
 [TheIdServer](https://github.com/aguacongas/TheIdServer) mais implémenté en Python
@@ -57,7 +57,7 @@ les politiques de sécurité** — le glue entre la spec et la lib crypto.
 ## Documentation
 
 - [Installation](docs/installation.md) — prérequis, installation, lancement, déploiement
-- [Configuration du serveur](docs/configuration.md) — variables `PYOIDC_*`, `.env`, démarrage
+- [Configuration du serveur](docs/configuration.md) — variables `THEPUROIDC_*`, `.env`, démarrage
 
 ## Structure (Clean Architecture)
 
@@ -65,7 +65,7 @@ Le code suit **Clean Architecture** : chaque cercle ne dépend que de son cercle
 (`domain` ← `application` ← `interfaces` ← `infrastructure`).
 
 ```text
-src/pyoidc/
+src/thepuroidc/
   domain/          entités OIDC (Client, Grant, Scope, Claims) — zéro dépendance
   application/     cas d'utilisation : émission code/token, validation, consentement
   interfaces/
@@ -81,7 +81,7 @@ tests/             pytest unit + intégration (TestClient httpx)
 
 1. **Bootstrap** — FastAPI + models Pydantic + endpoints `/token` et `/authorize` squelettes
 2. ✅ **JWKS + Discovery** — génération de clés de signature multi-algorithmes
-   (RSA `RS*`/`PS*`, EC `ES*` — liste configurable via `PYOIDC_JWKS_ALGORITHMS`,
+   (RSA `RS*`/`PS*`, EC `ES*` — liste configurable via `THEPUROIDC_JWKS_ALGORITHMS`,
    **tous les algorithmes fournis par défaut**),
    rotation par algorithme, `/.well-known/*`
 3. **Authorization Code + PKCE** (grant principal, RFC 6749 + 7636)
@@ -97,18 +97,18 @@ tests/             pytest unit + intégration (TestClient httpx)
 
 ```sh
 uv sync                    # installe les dépendances (prod + dev)
-uv run python -m pyoidc    # lance le serveur sur http://127.0.0.1:8000
+uv run python -m thepuroidc    # lance le serveur sur http://127.0.0.1:8000
 
 uv run python scripts/check.py   # vérification locale complète : ruff + mypy + pytest
 uv run python scripts/check.py lint format type test  # ou une sous-sélection
 ```
 
-Config via variables d'environnement `PYOIDC_*` (`PYOIDC_ISSUER`, `PYOIDC_HOST`,
-`PYOIDC_PORT`, `PYOIDC_JWKS_ALGORITHMS`, ...).
+Config via variables d'environnement `THEPUROIDC_*` (`THEPUROIDC_ISSUER`, `THEPUROIDC_HOST`,
+`THEPUROIDC_PORT`, `THEPUROIDC_JWKS_ALGORITHMS`, ...).
 
 ## Qualité et SonarCloud
 
-Le projet passe par **SonarCloud** (org `aguacongas`, projet `aguacongas_PyOidc`).
+Le projet passe par **SonarCloud** (org `aguacongas`, projet `aguacongas_ThePurOidc`).
 Les règles de codage sont alignées sur celles de Sonar en local :
 
 - **Complexité cyclomatique** ≤ 10 par fonction (équivalent S3776) — via ruff `C90`
@@ -123,8 +123,8 @@ puis analyse SonarCloud sur `push`/`pull_request`.
 ```sh
 # 1. Token d'analyse SonarCloud (User > Security > Generate Token), puis :
 gh secret set SONAR_SECRET
-# 2. Créer le projet "PyOidc" dans l'org aguacongas sur sonarcloud.io
-#    (clé : aguacongas_PyOidc) et activer la "Pull request decoration" GitHub.
+# 2. Créer le projet "ThePurOidc" dans l'org aguacongas sur sonarcloud.io
+#    (clé : aguacongas_ThePurOidc) et activer la "Pull request decoration" GitHub.
 ```
 
 ## Notes

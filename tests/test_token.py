@@ -7,14 +7,14 @@ from typing import TypeVar
 
 import pytest
 
-from pyoidc.application.token import TokenConfig, TokenRequest, TokenUseCase
-from pyoidc.domain.authorization import AuthorizationCode, Client, ClientType, Scope
-from pyoidc.domain.jwks import JWTAlgorithm
-from pyoidc.infrastructure.jwks import DefaultKeyManager
-from pyoidc.infrastructure.persistence.clients_memory import InMemoryClientRepository
-from pyoidc.infrastructure.persistence.codes_memory import InMemoryAuthorizationCodeRepository
-from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
-from pyoidc.infrastructure.tokens import PyJWTTokenManager
+from thepuroidc.application.token import TokenConfig, TokenRequest, TokenUseCase
+from thepuroidc.domain.authorization import AuthorizationCode, Client, ClientType, Scope
+from thepuroidc.domain.jwks import JWTAlgorithm
+from thepuroidc.infrastructure.jwks import DefaultKeyManager
+from thepuroidc.infrastructure.persistence.clients_memory import InMemoryClientRepository
+from thepuroidc.infrastructure.persistence.codes_memory import InMemoryAuthorizationCodeRepository
+from thepuroidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
+from thepuroidc.infrastructure.tokens import PyJWTTokenManager
 
 _T = TypeVar("_T")
 

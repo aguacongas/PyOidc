@@ -3,7 +3,7 @@ requires = ["hatchling>=1.32.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pyoidc"
+name = "thepuroidc"
 version = "0.1.0"
 description = "Serveur OpenID Connect (OIDC) implémentant la spec, bâti sur FastAPI et PyJWT"
 readme = "README.md"
@@ -36,7 +36,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pyoidc"]
+packages = ["src/thepuroidc"]
 
 # ---------------------------------------------------------------------------
 # Ruff : lint + format (le standard moderne qui remplace black + flake8 + isort)
@@ -102,13 +102,13 @@ disallow_untyped_defs = false
 # pytest + couverture
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
-addopts = "-q --cov=pyoidc --cov-report=term-missing"
+addopts = "-q --cov=thepuroidc --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["src/pyoidc"]
+source = ["src/thepuroidc"]
 branch = true
-omit = ["src/pyoidc/__main__.py"]
+omit = ["src/thepuroidc/__main__.py"]
 
 [tool.coverage.report]
 show_missing = true

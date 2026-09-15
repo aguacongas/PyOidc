@@ -1,6 +1,6 @@
 """Client de démonstration : Authorization Code + PKCE (RFC 6749, RFC 7636).
 
-Implémente une *relying party* qui se connecte à un serveur PyOidc :
+Implémente une *relying party* qui se connecte à un serveur ThePurOidc :
 
 1. redirection du navigateur vers ``/authorize`` avec un challenge PKCE S256,
 2. réception du ``code`` d'autorisation sur ``/callback``,
@@ -13,7 +13,7 @@ Lancement (depuis la racine du dépôt) :
     uv run python samples/pkce-client/app.py
 
 Le client (http://127.0.0.1:5173) est pré-enregistré par défaut sur le
-serveur PyOidc ; rien d'autre à configurer pour un démarrage local.
+serveur ThePurOidc ; rien d'autre à configurer pour un démarrage local.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ _HTML_PAGE = """<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>PyOidc — client démo (Authorization Code + PKCE)</title>
+  <title>ThePurOidc — client démo (Authorization Code + PKCE)</title>
   <style>
     body {{ font-family: sans-serif; margin: 2rem; max-width: 42rem; }}
     code {{ background: #f4f4f4; padding: 0.15rem 0.35rem; border-radius: 4px; }}
@@ -134,11 +134,11 @@ def _page(body: str) -> str:
 def _index_html(settings: Settings) -> str:
     """Page d'accueil : invite à se connecter via le flow Authorization Code."""
     body = f"""
-<h1>PyOidc — client démo</h1>
+<h1>ThePurOidc — client démo</h1>
 <p>Se connecter avec le flow <strong>Authorization Code + PKCE</strong>
 contre le serveur <code>{html.escape(settings.issuer)}</code>.</p>
 <p>Client : <code>{html.escape(settings.client_id)}</code></p>
-<p><a class="button" href="/login">Se connecter avec PyOidc</a></p>
+<p><a class="button" href="/login">Se connecter avec ThePurOidc</a></p>
 """
     return _page(body)
 
@@ -242,7 +242,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     pending: dict[str, PendingAuth] = {}
 
     app = FastAPI(
-        title="PyOidc — client démo (Authorization Code + PKCE)",
+        title="ThePurOidc — client démo (Authorization Code + PKCE)",
         description="Relying party de démonstration du flow authorization code + PKCE.",
     )
 

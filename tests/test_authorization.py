@@ -6,8 +6,8 @@ from urllib.parse import parse_qs, urlparse
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from pyoidc.infrastructure.settings import Settings
-from pyoidc.server import create_app
+from thepuroidc.infrastructure.settings import Settings
+from thepuroidc.server import create_app
 
 _ISSUER = "https://id.example"
 
