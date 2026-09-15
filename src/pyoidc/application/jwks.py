@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm, KeyManager, KeyPair
+from pyoidc.domain.jwks import ALL_SIGNING_ALGORITHMS, JWTAlgorithm, KeyPair
+from pyoidc.interfaces.domain.jwks import KeyManager
 
 
 @dataclass(frozen=True, slots=True)

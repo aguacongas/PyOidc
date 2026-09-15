@@ -78,8 +78,9 @@ PYOIDC_ISSUER=https://id.example.com uv run uvicorn pyoidc.server:app --host 127
 - Les clés privées sont stockées en texte PEM ; le repository SQL utilise une table
   `key_pairs` avec une colonne `kid` (identifiant unique, clé primaire) et une colonne
   `is_active` (booléen) pour gérer la rotation.
-- Le `KeyPairRepository` est un port (Protocol) ; seules les implémentations `memory`
-  et `sql` sont livrées dans cette version. Des implémentations Redis et MongoDB
-  peuvent être ajoutées comme extras optionnels.
+- Les contrats (ports) de gestion des clés (`KeyManager`) et de persistance
+  (`KeyPairRepository`) sont des Protocol vivant dans `pyoidc/interfaces/` ;
+  seules les implémentations `memory` et `sql` sont livrées dans cette version.
+  Des implémentations Redis et MongoDB peuvent être ajoutées comme extras optionnels.
 - Toutes les opérations sont asynchrones (`async/await`), compatibles avec l'event loop
   de FastAPI.
