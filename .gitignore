@@ -13,6 +13,10 @@ venv/
 .env.*
 !.env.example
 
+# IDEs
+.vscode/
+.idea/
+
 # Tooling caches
 .pytest_cache/
 .mypy_cache/
