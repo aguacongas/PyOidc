@@ -9,7 +9,7 @@ from fastapi import FastAPI
 
 from pyoidc.application.discovery import DiscoveryConfig, DiscoveryUseCase
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
-from pyoidc.infrastructure.jwks import RSAKeyManager
+from pyoidc.infrastructure.jwks import DefaultKeyManager
 from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
 from pyoidc.infrastructure.settings import Settings
 from pyoidc.interfaces.api.discovery import discovery_router
@@ -28,7 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     key_repository = build_key_pair_repository(settings)
-    key_manager = RSAKeyManager(key_repository)
+    key_manager = DefaultKeyManager(key_repository)
     jwks_config = JWKSetConfig(
         key_size=settings.jwks_key_size,
         algorithms=settings.jwks_signing_algorithms,

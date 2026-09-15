@@ -11,7 +11,7 @@ import pytest
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
-from pyoidc.infrastructure.jwks import RSAKeyManager
+from pyoidc.infrastructure.jwks import DefaultKeyManager
 from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
 from pyoidc.infrastructure.persistence.sql import SQLKeyPairRepository, _async_dsn
@@ -71,7 +71,7 @@ def test_factory_rejects_unknown_store_type() -> None:
 def test_sql_repo_normalises_old_naive_datetime(tmp_path: Path) -> None:
     """Les dates stockées sans fuseau (anciennes versions) sont relues en UTC."""
     repo = run(_make_repo(tmp_path))
-    manager = RSAKeyManager(repo)
+    manager = DefaultKeyManager(repo)
     key_pair = run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256))
     naive = replace(key_pair, created_at=datetime(year=2026, month=1, day=1))
     run(repo.update(naive))
@@ -87,7 +87,7 @@ def _close(repo: SQLKeyPairRepository) -> None:
 
 def test_sql_repo_round_trip(tmp_path: Path) -> None:
     repo = run(_make_repo(tmp_path))
-    manager = RSAKeyManager(repo)
+    manager = DefaultKeyManager(repo)
     key_pair = run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.ES256))
 
     stored = run(repo.find_all())
@@ -102,7 +102,7 @@ def test_sql_repo_round_trip(tmp_path: Path) -> None:
 
 def test_sql_repo_first_active_key_per_algorithm(tmp_path: Path) -> None:
     repo = run(_make_repo(tmp_path))
-    manager = RSAKeyManager(repo)
+    manager = DefaultKeyManager(repo)
     run(manager.ensure_active_key(_KEY_SIZE, JWTAlgorithm.RS256))
     run(manager.ensure_active_key(_KEY_SIZE, JWTAlgorithm.RS256))
 
@@ -112,12 +112,12 @@ def test_sql_repo_first_active_key_per_algorithm(tmp_path: Path) -> None:
 def test_sql_repo_survives_restart(tmp_path: Path) -> None:
     """Les clés relues par un nouvel accès (reprise après redémarrage)."""
     repo = run(_make_repo(tmp_path))
-    manager = RSAKeyManager(repo)
+    manager = DefaultKeyManager(repo)
     key_pair = run(manager.generate_key_pair(_KEY_SIZE, JWTAlgorithm.RS256))
     _close(repo)
 
     repo2 = SQLKeyPairRepository(f"sqlite+aiosqlite:///{tmp_path / 'keys.db'}")
-    manager2 = RSAKeyManager(repo2)
+    manager2 = DefaultKeyManager(repo2)
     active = run(manager2.get_active_keys())
 
     assert len(active) == 1
@@ -127,7 +127,7 @@ def test_sql_repo_survives_restart(tmp_path: Path) -> None:
 
 def test_sql_repo_rotation_persisted(tmp_path: Path) -> None:
     repo = run(_make_repo(tmp_path))
-    manager = RSAKeyManager(repo)
+    manager = DefaultKeyManager(repo)
 
     async def _set_old_key() -> str:
         now = datetime.now(timezone.utc)

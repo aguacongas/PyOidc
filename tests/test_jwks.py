@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
-from pyoidc.infrastructure.jwks import RSAKeyManager
+from pyoidc.infrastructure.jwks import DefaultKeyManager
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
 from pyoidc.infrastructure.settings import Settings
 from pyoidc.server import create_app
@@ -28,8 +28,8 @@ def run(awaitable: Awaitable[_T]) -> _T:
     return asyncio.run(awaitable)
 
 
-def _manager() -> RSAKeyManager:
-    return RSAKeyManager(InMemoryKeyPairRepository())
+def _manager() -> DefaultKeyManager:
+    return DefaultKeyManager(InMemoryKeyPairRepository())
 
 
 def test_key_manager_generates_rsa_pair() -> None:
@@ -180,11 +180,7 @@ def _is_valid_base64url(value: str) -> bool:
     return True
 
 
-def _manager() -> RSAKeyManager:
-    return RSAKeyManager(InMemoryKeyPairRepository())
-
-
-def _plant_keys(manager: RSAKeyManager, algorithm: JWTAlgorithm, *ages_days: int) -> None:
+def _plant_keys(manager: DefaultKeyManager, algorithm: JWTAlgorithm, *ages_days: int) -> None:
     """Remplit le magasin avec des clés datées artificiellement (en jours)."""
     now = datetime.now(timezone.utc)
     for age in ages_days:

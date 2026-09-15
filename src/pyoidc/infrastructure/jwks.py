@@ -56,7 +56,7 @@ class _PEMPublicKey(Protocol):
     ) -> bytes: ...
 
 
-class RSAKeyManager:
+class DefaultKeyManager:
     """Génère et stocke des paires de clés de signature via un repository.
 
     Supporte les familles RSA (RS*, PS*) et EC (ES*) : le type de clé
