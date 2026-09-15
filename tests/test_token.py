@@ -230,16 +230,15 @@ class TestPyJWTTokenManager:
                 return 0
 
         tm = PyJWTTokenManager(_BrokenKeyManager())  # type: ignore[arg-type]
+        create = tm.create_access_token(
+            algorithm=JWTAlgorithm.RS256,
+            issuer=_ISSUER,
+            subject="sub",
+            audience="aud",
+            expires_at=9999999999,
+            issued_at=1000000000,
+            scopes=frozenset({Scope.OPENID}),
+        )
 
         with pytest.raises(RuntimeError, match="Aucune clé active"):
-            run(
-                tm.create_access_token(
-                    algorithm=JWTAlgorithm.RS256,
-                    issuer=_ISSUER,
-                    subject="sub",
-                    audience="aud",
-                    expires_at=9999999999,
-                    issued_at=1000000000,
-                    scopes=frozenset({Scope.OPENID}),
-                )
-            )
+            run(create)
