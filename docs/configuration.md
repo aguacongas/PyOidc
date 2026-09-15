@@ -117,7 +117,13 @@ THEPUROIDC_ISSUER=https://id.example.com uv run uvicorn thepuroidc.server:app --
   sont livrées dans cette version.
   Des implémentations Redis et MongoDB peuvent être ajoutées comme extras optionnels.
 - Les endpoints `/authorize` et `/token` supportent le flux Authorization Code
-  avec PKCE (S256), conforme aux RFC 6749 et 7636. Les clients publics
+  avec PKCE (S256), conformes aux RFC 6749 et 7636. Les clients publics
   doivent utiliser PKCE. Les secrets sont hashés SHA-256 (jamais stockés en clair).
+- L'endpoint `/userinfo` valide l'access token Bearer (signature JWKS, `iss`,
+  `exp`) puis renvoie les claims filtrés par les scopes accordés au jeton
+  (OIDC Core 1.0 §5.4). Les claims sont résolus par un `ClaimsProvider`
+  (`interfaces/domain/userinfo.py`) dont l'implémentation livrée est un
+  annuaire **en mémoire & de démonstration** (`infrastructure/claims.py`) —
+  prête à être remplacée par un vrai user store.
 - Toutes les opérations sont asynchrones (`async/await`), compatibles avec l'event loop
   de FastAPI.
