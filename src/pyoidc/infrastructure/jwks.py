@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from pyoidc.domain.jwks import JWTAlgorithm, KeyPair
+from pyoidc.interfaces.repositories.key_pair_repository import KeyPairRepository
 
 _RSA_ALGORITHMS = (
     JWTAlgorithm.RS256,
@@ -55,28 +56,29 @@ class _PEMPublicKey(Protocol):
     ) -> bytes: ...
 
 
-class RSAKeyManager:
-    """Génère et stocke des paires de clés de signature en mémoire.
+class DefaultKeyManager:
+    """Génère et stocke des paires de clés de signature via un repository.
 
-    Supporte les familles RSA (RS*, PS*) et EC (ES*) :
-    le type de clé générée dépend de l'algorithme demandé.
+    Supporte les familles RSA (RS*, PS*) et EC (ES*) : le type de clé
+    générée dépend de l'algorithme demandé. Le repository injecté fournit
+    la persistance (mémoire pour les tests, SQL/Redis/Mongo en production).
     """
 
-    def __init__(self) -> None:
-        """Initialise le magasin de clés vide."""
-        self._keys: list[KeyPair] = []
+    def __init__(self, repository: KeyPairRepository) -> None:
+        """Injection du repository de persistance des clés."""
+        self._repository = repository
 
-    def generate_key_pair(self, key_size: int, algorithm: JWTAlgorithm) -> KeyPair:
-        """Génère une paire de clés pour l'algorithme et l'ajoute au magasin."""
+    async def generate_key_pair(self, key_size: int, algorithm: JWTAlgorithm) -> KeyPair:
+        """Génère une paire de clés pour l'algorithme et la persiste."""
         key_pair = _generate_key_pair(key_size, algorithm)
-        self._keys.append(key_pair)
+        await self._repository.save(key_pair)
         return key_pair
 
-    def get_active_keys(self) -> list[KeyPair]:
+    async def get_active_keys(self) -> list[KeyPair]:
         """Retourne les clés marquées actives."""
-        return [k for k in self._keys if k.is_active]
+        return [k for k in await self._repository.find_all() if k.is_active]
 
-    def mark_expired_keys(self, rotation_days: int, grace_period_days: int) -> int:
+    async def mark_expired_keys(self, rotation_days: int, grace_period_days: int) -> int:
         """Marque les clés expirées, supprime celles dépassant la grace period.
 
         Retourne le nombre de clés supprimées.
@@ -85,23 +87,19 @@ class RSAKeyManager:
         rotation_deadline = now - timedelta(days=rotation_days)
         grace_deadline = now - timedelta(days=rotation_days + grace_period_days)
         removed = 0
-        surviving: list[KeyPair] = []
-        for key in self._keys:
+        for key in await self._repository.find_all():
             if key.created_at <= grace_deadline:
+                await self._repository.delete(key.kid)
                 removed += 1
-                continue
-            if key.created_at <= rotation_deadline and key.is_active:
-                surviving.append(replace(key, is_active=False))
-            else:
-                surviving.append(key)
-        self._keys = surviving
+            elif key.created_at <= rotation_deadline and key.is_active:
+                await self._repository.update(replace(key, is_active=False))
         return removed
 
-    def ensure_active_key(self, key_size: int, algorithm: JWTAlgorithm) -> None:
+    async def ensure_active_key(self, key_size: int, algorithm: JWTAlgorithm) -> None:
         """Génère une clé de l'algorithme si aucune clé active n'est disponible."""
-        active = [k for k in self.get_active_keys() if k.algorithm is algorithm]
+        active = [k for k in await self.get_active_keys() if k.algorithm is algorithm]
         if not active:
-            self.generate_key_pair(key_size, algorithm)
+            await self.generate_key_pair(key_size, algorithm)
 
 
 def _generate_key_pair(key_size: int, algorithm: JWTAlgorithm) -> KeyPair:

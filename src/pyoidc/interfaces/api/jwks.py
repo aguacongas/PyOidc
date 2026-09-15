@@ -13,8 +13,10 @@ def jwk_set_router(usecase: JWKSetUseCase) -> APIRouter:
     router = APIRouter(tags=["jwks"])
 
     @router.get("/.well-known/jwks.json", summary="JSON Web Key Set")
-    def jwk_set() -> JWKSetResponse:
-        keys = [JWKKeyResponse.from_key_pair(key_pair) for key_pair in usecase.get_active_keys()]
+    async def jwk_set() -> JWKSetResponse:
+        keys = [
+            JWKKeyResponse.from_key_pair(key_pair) for key_pair in await usecase.get_active_keys()
+        ]
         return JWKSetResponse(keys=keys)
 
     return router
