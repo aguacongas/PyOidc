@@ -18,6 +18,9 @@ Elle est lue au démarrage par [pydantic-settings](https://docs.pydantic.dev/lat
 | `PYOIDC_JWKS_ALGORITHMS` | *(tous)* | Liste (séparée par des virgules) des algorithmes de signature fournis. Supporte `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`. |
 | `PYOIDC_JWKS_ROTATION_DAYS` | `90` | Âge à partir duquel une clé de signature est retirée du JWKS et remplacée. |
 | `PYOIDC_JWKS_GRACE_PERIOD_DAYS` | `7` | Délai après la rotation avant suppression définitive de l'ancienne clé. |
+| `PYOIDC_AUTHORIZATION_CODE_TTL_SECONDS` | `600` | Durée de vie du code d'autorisation (secondes). |
+| `PYOIDC_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Durée de vie de l'access token émis (secondes). |
+| `PYOIDC_CLIENTS` | `()` | Liste JSON de clients seed au démarrage (format `[{"client_id":"...","client_secret":"...","redirect_uris":["..."],"scopes":"openid","client_type":"public"}]`). |
 
 ### `issuer` vs `base_url`
 
@@ -78,9 +81,14 @@ PYOIDC_ISSUER=https://id.example.com uv run uvicorn pyoidc.server:app --host 127
 - Les clés privées sont stockées en texte PEM ; le repository SQL utilise une table
   `key_pairs` avec une colonne `kid` (identifiant unique, clé primaire) et une colonne
   `is_active` (booléen) pour gérer la rotation.
-- Les contrats (ports) de gestion des clés (`KeyManager`) et de persistance
-  (`KeyPairRepository`) sont des Protocol vivant dans `pyoidc/interfaces/` ;
-  seules les implémentations `memory` et `sql` sont livrées dans cette version.
+- Les contrats (ports) de gestion des clés (`KeyManager`), de persistance
+  (`KeyPairRepository`), des clients (`ClientRepository`) et des codes
+  d'autorisation (`AuthorizationCodeRepository`) sont des Protocol vivant
+  dans `pyoidc/interfaces/` ; seules les implémentations `memory` et `sql`
+  sont livrées dans cette version.
   Des implémentations Redis et MongoDB peuvent être ajoutées comme extras optionnels.
+- Les endpoints `/authorize` et `/token` supportent le flux Authorization Code
+  avec PKCE (S256), conforme aux RFC 6749 et 7636. Les clients publics
+  doivent utiliser PKCE. Les secrets sont hashés SHA-256 (jamais stockés en clair).
 - Toutes les opérations sont asynchrones (`async/await`), compatibles avec l'event loop
   de FastAPI.

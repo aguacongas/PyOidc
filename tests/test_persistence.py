@@ -12,9 +12,10 @@ import pytest
 from pyoidc.application.jwks import JWKSetConfig, JWKSetUseCase
 from pyoidc.domain.jwks import JWTAlgorithm
 from pyoidc.infrastructure.jwks import DefaultKeyManager
+from pyoidc.infrastructure.persistence.base import async_dsn
 from pyoidc.infrastructure.persistence.factory import build_key_pair_repository
 from pyoidc.infrastructure.persistence.memory import InMemoryKeyPairRepository
-from pyoidc.infrastructure.persistence.sql import SQLKeyPairRepository, _async_dsn
+from pyoidc.infrastructure.persistence.sql import SQLKeyPairRepository
 from pyoidc.infrastructure.settings import Settings
 
 _KEY_SIZE = 2048
@@ -42,9 +43,9 @@ def test_sql_repo_delete_absent_key_is_noop(tmp_path: Path) -> None:
 
 
 def test_async_dsn_rewrites_dialect() -> None:
-    assert _async_dsn("sqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
-    assert _async_dsn("postgresql://user@host/db") == "postgresql+asyncpg://user@host/db"
-    assert _async_dsn("sqlite+aiosqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
+    assert async_dsn("sqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
+    assert async_dsn("postgresql://user@host/db") == "postgresql+asyncpg://user@host/db"
+    assert async_dsn("sqlite+aiosqlite:///keys.db") == "sqlite+aiosqlite:///keys.db"
 
 
 def test_factory_builds_memory_repository() -> None:
